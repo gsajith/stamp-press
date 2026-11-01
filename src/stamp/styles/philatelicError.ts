@@ -100,8 +100,8 @@ function ellipse(cx: number, cy: number, rx: number, ry: number): Piece {
       const k1 = Math.sqrt(u1 * u1 + v1 * v1);
       return k1 === 0 ? -Math.min(rx, ry) : (k0 * (k0 - 1)) / k1;
     },
-    // Quilez's estimate can overstate the distance on a long, thin ellipse, so the grid uses the distance to its
-    // bounding circle or box instead, whichever is larger.
+    // Quilez's estimate can be off either way on a long, thin ellipse, so the grid rules cells out with the
+    // distance to its bounding circle or box instead, whichever is larger, which is never too far.
     far: (x, y) => {
       const [dx, dy] = [x - cx, y - cy];
       const [bx, by] = [Math.abs(dx) - rx, Math.abs(dy) - ry];
@@ -295,7 +295,9 @@ const holds = (pieces: Piece[], corners: readonly Pt[]) =>
 // A grid over the art, and a margin round it for plates printed off the paper, to find what is near a point.
 // Each cell sorts the shapes: one surely farther than half a sample from the whole cell is left out, and one
 // whose convex piece holds the cell grown by half a sample paints without testing its edge and hides every
-// shape under it. Both tests are exact, so the shortcut never drops an edge that needs antialiasing.
+// shape under it. Both tests use true distances, so no edge loses its antialiasing. Painting uses Quilez's
+// estimate for ellipses, which runs a little short just past the ends of thin ones, so a culled cell can drop
+// a fringe of a few percent of one sample there.
 const CELL = 1 / 32;
 const MARGIN = 0.25;
 
