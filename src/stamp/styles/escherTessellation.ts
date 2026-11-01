@@ -10,7 +10,8 @@ import type { Style } from "../sources";
 // whose velocity has that same symmetry. A flow never tears or folds the plane, and one that commutes with the
 // symmetry carries every tile to a congruent creature, so the creatures always tile: each one's edge is a
 // deformed copy of its neighbor's, moved by translation or rotation, as in Heesch's tile types. Each pixel is
-// carried along the flow to find its tile and its place in it.
+// carried along the flow to find its tile and its place in it. The flow is stored as a table, which can fold
+// where the flow squeezes hard, so the flow's strength is capped and the table checks itself for folds.
 //
 // Like land1 it computes every pixel itself, so it is resolution independent and its pixels match in every
 // browser and in Node (ADR 0001). Only IEEE-exact arithmetic here: no Math.sin, Math.pow or the like.
@@ -190,8 +191,9 @@ export function locator(tiling: Tiling): {
 }
 
 // The steepest the flow's velocity may change, per unit of lattice space. A flow that changes faster stretches
-// creatures into spaghetti, and needs more steps to follow.
-const MAX_SLOPE = 3;
+// creatures into spaghetti, needs more steps to follow, and squeezes the plane too hard for the table, which
+// then folds. At 3, about one seed in five folded; at 2, about one in 400 before the table's own check.
+const MAX_SLOPE = 2;
 
 // The flow's velocity: smooth value noise that repeats with the lattice, averaged over the tiling's rotations
 // about the origin, so it has the tiling's full symmetry. `velocity` writes the velocity at a point in lattice
@@ -291,7 +293,7 @@ const TURN_STEP: Record<string, readonly number[]> = {
   "hex 6": [0, -1, 1, 1],
 };
 // How far a flow step may go, as a fraction of the distance over which the velocity changes, so steps follow
-// the flow closely enough never to fold the plane.
+// the flow closely enough not to fold the plane themselves.
 const STEP_REACH = 0.3;
 
 // The flow's displacement, tabulated over one lattice cell, since it repeats with the lattice. The function it
@@ -366,7 +368,7 @@ function displacement(
   // Derivatives along the table's axes, per unit of x and y.
   const [sx, sy] = [(by / det) * TABLE, (-bx / det) * TABLE];
   const [tx, ty] = [(-ay / det) * TABLE, (ax / det) * TABLE];
-  return (x, y, out) => {
+  const at = (x: number, y: number, out: Float64Array) => {
     const s = ((x * by - y * bx) / det) * TABLE;
     const t = ((y * ax - x * ay) / det) * TABLE;
     const fs = Math.floor(s);
@@ -407,6 +409,47 @@ function displacement(
     out[4] = dys * sx + dyt * tx;
     out[5] = 1 + dys * sy + dyt * ty;
   };
+
+  // The flow itself never folds, but where it squeezes hardest the table can be too coarse to follow it, and
+  // its splines overshoot into folds. Scaling the displacement by a keeps the flow's symmetry, and the map's
+  // Jacobian determinant is then 1 + a tr(A) + a^2 det(A), where A is the displacement's Jacobian. So find the
+  // largest a that keeps it positive at every table sample and every cell's middle, and keep a margin under it.
+  let scale = 1;
+  const out = new Float64Array(6);
+  for (let j = 0; j < 2 * TABLE; j++)
+    for (let i = 0; i < 2 * TABLE; i++) {
+      const [s, t] = [i / (2 * TABLE), j / (2 * TABLE)];
+      at(s * ax + t * bx, s * ay + t * by, out);
+      const [a00, a01, a10, a11] = [out[2] - 1, out[3], out[4], out[5] - 1];
+      const tr = a00 + a11;
+      const dt = a00 * a11 - a01 * a10;
+      // The smallest positive root of 1 + a tr + a^2 dt, if any.
+      let root = Infinity;
+      if (dt === 0) {
+        if (tr < 0) root = -1 / tr;
+      } else {
+        const disc = tr * tr - 4 * dt;
+        if (disc >= 0) {
+          const q = Math.sqrt(disc);
+          for (const r of [(-tr - q) / (2 * dt), (-tr + q) / (2 * dt)])
+            if (r > 0 && r < root) root = r;
+        }
+      }
+      if (0.8 * root < scale) scale = 0.8 * root;
+    }
+  if (scale < 1) for (let i = 0; i < table.length; i++) table[i] *= scale;
+  return at;
+}
+
+// The map that bends a base tiling into creatures: a flow with the tiling's symmetry, its velocity noise drawn
+// from `rand` at about `strength`. Returns the tabulated displacement, as `displacement` does.
+export function creatureFlow(
+  tiling: Tiling,
+  rand: () => number,
+  strength: number,
+): (x: number, y: number, out: Float64Array) => void {
+  const { velocity, slope } = velocityField(tiling, rand, strength);
+  return displacement(tiling, velocity, slope);
 }
 
 // How much of a sample `px` wide a band covers, the band being where the distance `d` is within `w` / 2 of 0.
@@ -461,12 +504,7 @@ function draw(
 
   // The creatures: how hard the flow bends them, then their eye and stripes in the canonical tile. The eye
   // looks along `look`, and the stripes cross the body behind it.
-  const { velocity, slope } = velocityField(
-    tiling,
-    rand,
-    tileSize * (0.9 + 0.9 * rand()),
-  );
-  const flow = displacement(tiling, velocity, slope);
+  const flow = creatureFlow(tiling, rand, tileSize * (0.9 + 0.9 * rand()));
   const look = unitVec();
   const eyeAt = tileSize * (0.12 + 0.1 * rand());
   const eye = {

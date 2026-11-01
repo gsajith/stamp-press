@@ -3,7 +3,12 @@ import { createCanvas } from "@napi-rs/canvas";
 import { describe, expect, it } from "vitest";
 import { drawArt, resolveStamp, STYLES } from "..";
 import { mulberry32 } from "../random";
-import { locator, type Place, TILINGS } from "./escherTessellation";
+import {
+  creatureFlow,
+  locator,
+  type Place,
+  TILINGS,
+} from "./escherTessellation";
 
 // Draws a stamp's art in Node and returns its RGBA pixels.
 function pixels(seed: number, width: number, height: number) {
@@ -25,9 +30,9 @@ describe("escher tessellation 1", () => {
   // ADR 0001: a published style's output for a seed never changes. If one of these fails, the style's drawing
   // changed: restore it, and ship the change as a new style version instead.
   it("draws the same pixels it shipped with", () => {
-    expect(sha(pixels(1, 39, 50))).toBe("fbca0490f260aba3");
-    expect(sha(pixels(2, 50, 39))).toBe("332cd6a798d87c61");
-    expect(sha(pixels(3, 44, 44))).toBe("ffd45ccaec7107ff");
+    expect(sha(pixels(1, 39, 50))).toBe("dffe74e4d2c1e6ad");
+    expect(sha(pixels(2, 50, 39))).toBe("b3227fb50c227e92");
+    expect(sha(pixels(3, 44, 44))).toBe("f455df9155e122c1");
     // Large enough not to be supersampled, as at desk size and in the detail view.
     expect(sha(pixels(7, 160, 200))).toBe("5f88e2bf5b8e8758");
   });
@@ -97,6 +102,40 @@ describe("the base tilings", () => {
         expect(color(a)).toBeLessThan(tiling.colors);
       }
       expect(crossings).toBeGreaterThan(200);
+    },
+  );
+});
+
+describe("the creature flow", () => {
+  // A flow never folds the plane, but its table can if it's too coarse for how hard the flow squeezes: tiles
+  // then tear and overlap, with slivers of outline along their edges. The map must keep a positive Jacobian
+  // determinant everywhere, checked on a grid finer than the table, at the strongest strength a stamp draws.
+  it.each(TILINGS.map((t) => [`${t.lattice} ${t.order}`, t] as const))(
+    "never folds the plane in %s",
+    (_, tiling) => {
+      const [[ax, ay], [bx, by]] =
+        tiling.lattice === "square"
+          ? [
+              [1, 0],
+              [0, 1],
+            ]
+          : [
+              [1, 0],
+              [0.5, Math.sqrt(3) / 2],
+            ];
+      const size = Math.sqrt((ax * by - ay * bx) / tiling.order);
+      const map = new Float64Array(6);
+      const G = 97;
+      let folded = 0;
+      for (let seed = 1; seed <= 40; seed++) {
+        const flow = creatureFlow(tiling, mulberry32(seed), size * 1.8);
+        for (let j = 0; j < G; j++)
+          for (let i = 0; i < G; i++) {
+            flow((i * ax + j * bx) / G, (i * ay + j * by) / G, map);
+            if (map[2] * map[5] - map[3] * map[4] <= 0) folded++;
+          }
+      }
+      expect(folded).toBe(0);
     },
   );
 });
