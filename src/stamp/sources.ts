@@ -4,6 +4,7 @@ import type { StampRef } from "./ref";
 import { bauhausGrid1 } from "./styles/bauhausGrid";
 import { botanicalLSystem1 } from "./styles/botanicalLSystem";
 import { guillocheRosette1 } from "./styles/guillocheRosette";
+import { halftoneObject1 } from "./styles/halftoneObject";
 import { landscapeSilhouette1 } from "./styles/landscapeSilhouette";
 import { pixelSprite1 } from "./styles/pixelSprite";
 import { risoOverprint1 } from "./styles/risoOverprint";
@@ -56,6 +57,7 @@ export const STYLES: readonly Style[] = [
   truchetTiles1,
   botanicalLSystem1,
   guillocheRosette1,
+  halftoneObject1,
 ];
 
 // Style versions no longer pressed. They stay registered so their share links keep working: when a new
