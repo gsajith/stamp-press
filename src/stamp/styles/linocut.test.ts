@@ -36,7 +36,8 @@ describe("linocut 1", () => {
   });
 
   // Gouges and specks finer than a pixel have to average out, not alias. Draws with a short side under 192 px
-  // are supersampled, so they match closely. Desk-sized draws aren't, and their sub-pixel texture strays more.
+  // are supersampled, so they match closely. Larger ones, like most desk stamps, aren't, and their sub-pixel
+  // texture strays more.
   it.each([
     [40, 52, 8, 2],
     [200, 256, 4, 2.5],
