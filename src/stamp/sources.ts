@@ -9,8 +9,11 @@ import { halftoneObject1 } from "./styles/halftoneObject";
 import { landscapeSilhouette1 } from "./styles/landscapeSilhouette";
 import { linocut1 } from "./styles/linocut";
 import { midCentury1 } from "./styles/midCentury";
+import { paperDiorama1 } from "./styles/paperDiorama";
 import { pixelSprite1 } from "./styles/pixelSprite";
 import { risoOverprint1 } from "./styles/risoOverprint";
+import { skyChart1 } from "./styles/skyChart";
+import { steelEngraving1 } from "./styles/steelEngraving";
 import { truchetTiles1 } from "./styles/truchetTiles";
 
 // A style: one procedural look, drawn by code from a seed and a palette. It draws in resolution-independent
@@ -63,6 +66,9 @@ export const STYLES: readonly Style[] = [
   halftoneObject1,
   midCentury1,
   linocut1,
+  skyChart1,
+  steelEngraving1,
+  paperDiorama1,
   escherTessellation1,
 ];
 
