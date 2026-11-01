@@ -49,10 +49,10 @@ export function DetailView({
     const timer = setTimeout(() => setCopied(null), COPIED_TIME);
     return () => clearTimeout(timer);
   }, [copied]);
-  // The clipboard is missing outside a secure context, and the copy can be refused.
+  // The clipboard is missing outside a secure context, which throws here, and the copy can be refused.
   const copy = () =>
-    navigator.clipboard
-      .writeText(link)
+    Promise.resolve()
+      .then(() => navigator.clipboard.writeText(link))
       .then(() => setCopied("copied"))
       .catch(() => setCopied("failed"));
   useLayoutEffect(() => {

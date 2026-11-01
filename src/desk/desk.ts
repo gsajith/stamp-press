@@ -30,7 +30,7 @@ export type DeskStamp = {
 
 // `focus` is the spot on the desk the camera centers on. `lastPress` is when the last press dropped a stamp,
 // in milliseconds. `open` is the id of the stamp in the detail view, or null when there's none. `opening` is
-// the stamp a share link dropped, to open once it has landed, or null.
+// the stamp a share link dropped, to open once it has landed unless a press comes first, or null.
 export type Desk = {
   stamps: DeskStamp[];
   focus: Spot;
@@ -109,6 +109,8 @@ export function deskReducer(desk: Desk, event: DeskEvent): Desk {
         stamps: [...stamps, stampAt(stamps.length, event.ref, spot)],
         focus: burst ? focus : spot,
         lastPress: event.at,
+        // A press takes over from a shared stamp that hasn't opened yet: it stays on the desk.
+        opening: null,
       };
     }
     case "land": {

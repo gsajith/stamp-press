@@ -198,6 +198,12 @@ describe("desk", () => {
       expect(run([press(7, 9000)], closed).stamps).toHaveLength(2);
     });
 
+    it("stays down once the visitor presses before it opens", () => {
+      const desk = run([loadLink("bau1-1z141z3"), press(7, 500)]);
+      expect(desk.stamps).toHaveLength(2);
+      expect(desk.opening).toBeNull();
+    });
+
     it.each([
       ["malformed", "land1_zz"],
       ["out of range", "land1-zzzzzzz"],
