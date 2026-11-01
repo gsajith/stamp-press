@@ -47,6 +47,25 @@ function noise2(x: number, y: number, salt: number): number {
   return top + (c + (d - c) * sx - top) * sy;
 }
 
+// noise2 with the length of its gradient, for edges that need antialiasing.
+function noise2Slope(x: number, y: number, salt: number): [number, number] {
+  const ix = Math.floor(x);
+  const iy = Math.floor(y);
+  const fx = x - ix;
+  const fy = y - iy;
+  const sx = fx * fx * (3 - 2 * fx);
+  const sy = fy * fy * (3 - 2 * fy);
+  const a = hash2(ix, iy, salt);
+  const b = hash2(ix + 1, iy, salt);
+  const c = hash2(ix, iy + 1, salt);
+  const d = hash2(ix + 1, iy + 1, salt);
+  const top = a + (b - a) * sx;
+  const bottom = c + (d - c) * sx;
+  const gx = ((b - a) * (1 - sy) + (d - c) * sy) * 6 * fx * (1 - fx);
+  const gy = (bottom - top) * 6 * fy * (1 - fy);
+  return [top + (bottom - top) * sy, Math.sqrt(gx * gx + gy * gy)];
+}
+
 // Smooth 1D value noise in [0, 1], three octaves, with its slope, from a table of seeded values.
 function ridgeNoise(rand: () => number): (x: number) => [number, number] {
   const table = Array.from({ length: 64 }, rand);
@@ -66,8 +85,9 @@ function ridgeNoise(rand: () => number): (x: number) => [number, number] {
 }
 
 // Paper showing through a set of parallel gouges, lines at phi = (k + 0.5) * gap. `half(k)` is a gouge's half
-// width at this point, as a fraction of the gap (none at 0 or below), and `px` is the sample's size in the
-// units of phi. The result is how much of the sample the gouge covers, so thin gouges fade rather than alias.
+// width at this point, as a fraction of the gap, up to 0.5 (gouges meet) and none at 0 or below. `px` is the
+// sample's size in the units of phi. The result is how much of the sample the gouges cover, so thin gouges
+// fade rather than alias.
 function gouge(
   phi: number,
   gap: number,
@@ -76,11 +96,21 @@ function gouge(
 ): number {
   const t = phi / gap;
   const k = Math.floor(t);
-  const d = Math.abs(t - k - 0.5) * gap;
-  const h = half(k) * gap;
-  if (h <= 0) return 0;
-  const overlap = Math.min(d + px / 2, h) - Math.max(d - px / 2, -h);
-  return overlap > 0 ? overlap / px : 0;
+  // Distance to this cell's line, signed toward the nearer neighbor's.
+  const d = (t - k - 0.5) * gap;
+  const near = d < 0 ? -1 : 1;
+  const covered = (center: number, line: number) => {
+    const h = Math.min(0.5, half(line)) * gap;
+    if (h <= 0) return 0;
+    const overlap =
+      Math.min(center + px / 2, h) - Math.max(center - px / 2, -h);
+    return overlap > 0 ? overlap / px : 0;
+  };
+  const own = covered(Math.abs(d), k);
+  // Gouges stay in their own cells, so the neighbor only shows when the sample crosses into its cell.
+  return Math.abs(d) + px / 2 > gap / 2
+    ? own + covered(gap - Math.abs(d), k + near)
+    : own;
 }
 
 type Hill = {
@@ -263,8 +293,13 @@ function draw(
             0.35 * noise2(sx * 14, sy * 14, pressSalt2);
           // Grain on axes turned off the noise lattice, so specks don't line up with the pixels.
           const [u, v] = [0.8 * sx + 0.6 * sy, 0.8 * sy - 0.6 * sx];
-          const grain = noise2(u * 70, v * 70, grainSalt);
-          const speck = clamp01((grain - 0.84 + 0.3 * (press - 0.5)) / 0.07);
+          // A speck's edge softens to at least a sample's width, measured in grain by its slope, so specks
+          // smaller than a pixel blend rather than alias.
+          const [grain, slope] = noise2Slope(u * 70, v * 70, grainSalt);
+          const soft = Math.max(0.07, 70 * slope * px);
+          const speck = clamp01(
+            (grain - 0.875 - 0.3 * (press - 0.5)) / soft + 0.5,
+          );
           const coverage = (0.8 + 0.2 * press) * (1 - speck);
           const [a, b] = [ink * coverage, under * coverage];
           for (let c = 0; c < 3; c++) {
