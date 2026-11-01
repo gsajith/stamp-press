@@ -3,15 +3,17 @@ import {
   ExtrudeGeometry,
   Shape,
   SRGBColorSpace,
+  Texture,
   Vector2,
 } from "three";
-import { drawFace, punchGeometry, type Stamp } from "../stamp";
+import { punchGeometry, type Stamp } from "../stamp";
+import { paintFace } from "./face";
 
 // A stamp's paper thickness, in stamp units (a long side is 1).
 export const THICKNESS = 0.008;
 // Desk stamps draw small, and the detail view redraws at around 2048 px, so zooming in stays sharp. Both are
 // pixels along a stamp's long side.
-export const DESK_TEXTURE = 256;
+const DESK_TEXTURE = 256;
 export const DETAIL_TEXTURE = 2048;
 
 const canvas = (width: number, height: number) => {
@@ -42,16 +44,23 @@ export function stampGeometry(stamp: Stamp): ExtrudeGeometry {
   return geometry;
 }
 
-// The stamp's face, punched, `size` pixels along its long side. Paper fills in behind the cut, so its edge
-// texels blend to paper rather than to transparent black.
-export function stampTexture(stamp: Stamp, size: number): CanvasTexture {
-  const { width, height } = punchGeometry(stamp.punch);
-  const ctx = canvas(Math.round(width * size), Math.round(height * size));
-  drawFace(ctx, stamp, size, canvas);
-  ctx.globalCompositeOperation = "destination-over";
-  ctx.fillStyle = stamp.palette.paper;
-  ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+// The stamp's face at desk size, as a texture.
+export function deskTexture(stamp: Stamp): CanvasTexture {
+  const ctx = canvas(1, 1);
+  paintFace(ctx, stamp, DESK_TEXTURE, canvas);
   const texture = new CanvasTexture(ctx.canvas);
   texture.colorSpace = SRGBColorSpace;
+  return texture;
+}
+
+// The detail view's large face, painted off the main thread (see face.worker.ts). An ImageBitmap ignores
+// flipY, so its rows run top down: the texture flips them back as it samples.
+export function faceTexture(bitmap: ImageBitmap): Texture {
+  const texture = new Texture(bitmap);
+  texture.flipY = false;
+  texture.repeat.set(1, -1);
+  texture.offset.set(0, 1);
+  texture.colorSpace = SRGBColorSpace;
+  texture.needsUpdate = true;
   return texture;
 }

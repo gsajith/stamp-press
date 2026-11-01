@@ -5,16 +5,11 @@ import {
   RigidBody,
 } from "@react-three/rapier";
 import { memo, useEffect, useMemo, useRef } from "react";
-import type { Group } from "three";
+import type { Group, Texture } from "three";
 import type { DeskStamp } from "../desk/desk";
 import { punchGeometry, resolveStamp, type Stamp } from "../stamp";
 import type { Placed } from "./placed";
-import {
-  DESK_TEXTURE,
-  stampGeometry,
-  stampTexture,
-  THICKNESS,
-} from "./stampMesh";
+import { deskTexture, stampGeometry, THICKNESS } from "./stampMesh";
 
 export const DROP_HEIGHT = 4;
 // The height over which a falling stamp's flutter dies away, so it lands flat.
@@ -123,33 +118,38 @@ export const StampBody = memo(function StampBody({
         }}
         onPointerOut={() => (cursor.cursor = "")}
       >
-        {shown && <StampMesh stamp={stamp} size={DESK_TEXTURE} />}
+        {shown && <StampMesh stamp={stamp} />}
       </group>
     </RigidBody>
   );
 });
 
-// A stamp's punched paper and printed face, drawn `size` pixels along its long side. Its geometry and texture
-// live only while it's mounted, and a new size releases the old texture. `onTop` draws it over the whole
-// scene, after the detail view's backdrop, casting no shadow.
+// A stamp's punched paper and printed face, at desk size or with a larger `face` in its place. Its geometry
+// and desk texture live only while it's mounted; `face` belongs to whoever passes it. `onTop` draws it over
+// the whole scene, after the detail view's backdrop, casting no shadow.
 export function StampMesh({
   stamp,
-  size,
+  face,
   onTop = false,
 }: {
   stamp: Stamp;
-  size: number;
+  face?: Texture | null;
   onTop?: boolean;
 }) {
   const anisotropy = useThree((s) => s.gl.capabilities.getMaxAnisotropy());
   const geometry = useMemo(() => stampGeometry(stamp), [stamp]);
-  const texture = useMemo(() => {
-    const t = stampTexture(stamp, size);
+  const desk = useMemo(() => {
+    const t = deskTexture(stamp);
     t.anisotropy = anisotropy;
     return t;
-  }, [stamp, size, anisotropy]);
-  useEffect(() => () => geometry.dispose(), [geometry]);
-  useEffect(() => () => texture.dispose(), [texture]);
+  }, [stamp, anisotropy]);
+  useEffect(
+    () => () => {
+      geometry.dispose();
+      desk.dispose();
+    },
+    [geometry, desk],
+  );
   // Drawn last, with no depth test, so neither the desk nor the stamps on it can cut into it. Back faces are
   // culled and the face draws before the cut edge, so it still reads front to back.
   const top = onTop
@@ -164,7 +164,7 @@ export function StampMesh({
     >
       <meshStandardMaterial
         attach="material-0"
-        map={texture}
+        map={face ?? desk}
         roughness={0.85}
         {...top}
       />

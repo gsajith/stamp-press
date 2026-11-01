@@ -7,6 +7,7 @@ import {
   type MeshBasicMaterial,
   type PerspectiveCamera,
   Quaternion,
+  type Texture,
   Vector3,
 } from "three";
 import type { DeskStamp } from "../desk/desk";
@@ -15,7 +16,7 @@ import { punchGeometry, resolveStamp } from "../stamp";
 import { DESK_COLOR } from "./Desk";
 import type { Placed } from "./placed";
 import { StampMesh } from "./StampBody";
-import { DESK_TEXTURE, DETAIL_TEXTURE } from "./stampMesh";
+import { DETAIL_TEXTURE, faceTexture } from "./stampMesh";
 
 // How far in front of the camera the stamp floats, in desk units. Its scale, not its distance, makes it fill
 // the screen, so it stays well clear of the camera's near plane however far it zooms.
@@ -33,8 +34,9 @@ const ease = (t: number) => (t < 0.5 ? 4 * t ** 3 : 1 - (-2 * t + 2) ** 3 / 2);
 
 // The detail view's stamp, in the Canvas: the open stamp, drawn here in place of its desk mesh, lifts from
 // where it lies to float face on in front of the camera, while the desk fades behind it. There it pans and
-// zooms with `view`, which the detail view's gestures write. It lifts with its desk texture and redraws at
-// DETAIL_TEXTURE once up, releasing that again on unmount. `leaving` takes it back down, then `onDown`.
+// zooms with `view`, which the detail view's gestures write. It lifts with its desk texture while a worker
+// redraws it at DETAIL_TEXTURE, swaps that in when it's ready, and releases it on unmount. `leaving` takes it
+// back down, then `onDown`.
 export function Lifted({
   entry,
   placed,
@@ -52,17 +54,35 @@ export function Lifted({
   const { width, height } = punchGeometry(stamp.punch);
   const camera = useThree((s) => s.camera) as PerspectiveCamera;
   const size = useThree((s) => s.size);
+  const anisotropy = useThree((s) => s.gl.capabilities.getMaxAnisotropy());
   const group = useRef<Group>(null);
   const backdrop = useRef<Mesh>(null);
   // The lift's progress: 0 on the desk, 1 up.
   const t = useRef(0);
   const down = useRef(false);
-  const [texture, setTexture] = useState(DESK_TEXTURE);
+  const [face, setFace] = useState<Texture | null>(null);
+  const wanted = !leaving && !face;
   useEffect(() => {
-    if (leaving) return;
-    const id = setTimeout(() => setTexture(DETAIL_TEXTURE), LIFT_TIME * 1000);
-    return () => clearTimeout(id);
-  }, [leaving]);
+    if (!wanted) return;
+    const worker = new Worker(new URL("./face.worker.ts", import.meta.url), {
+      type: "module",
+    });
+    worker.onmessage = ({ data }: MessageEvent<ImageBitmap>) => {
+      const texture = faceTexture(data);
+      texture.anisotropy = anisotropy;
+      setFace(texture);
+    };
+    // If it fails, the stamp stays at desk size.
+    worker.postMessage({ ref: entry.ref, size: DETAIL_TEXTURE });
+    return () => worker.terminate();
+  }, [wanted, entry.ref, anisotropy]);
+  useEffect(
+    () => () => {
+      face?.dispose();
+      (face?.image as ImageBitmap | undefined)?.close();
+    },
+    [face],
+  );
 
   // Where it lies on the desk, read as it opens: a stamp only opens once it has landed and gone still.
   const [from] = useState(() => {
@@ -140,7 +160,7 @@ export function Lifted({
         />
       </mesh>
       <group ref={group}>
-        <StampMesh stamp={stamp} size={texture} onTop />
+        <StampMesh stamp={stamp} face={face} onTop />
       </group>
     </>
   );
