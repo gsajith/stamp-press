@@ -53,9 +53,9 @@ export const EMPTY_DESK: Desk = {
   open: null,
 };
 
-// The most stamps that can fall at once. Mashing past it refuses presses until one lands.
+// The most stamps that can be in the air at once. Mashing past it refuses presses until one lands.
 export const MAX_IN_FLIGHT = 8;
-// A press this soon after the last one, or while a drop is still falling, is part of a burst.
+// A press this soon after the last one, or while a drop is still in the air, is part of a burst.
 const BURST_WINDOW = 1000;
 
 // Everything random about a drop comes from the stamp's seed, so the reducer stays pure.
