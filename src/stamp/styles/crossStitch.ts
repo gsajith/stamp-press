@@ -138,7 +138,8 @@ const FILLERS: readonly (readonly string[])[] = [
 
 // Border bands, as rules from a cell's place in the band to its thread: 0 bare, 1 the border's thread, 2 its
 // accent. `e` counts rows in from the band's outer edge, `h` rows in all, and `s` cells along it from the
-// middle of its side, in either direction, so every side is mirror symmetric about its middle.
+// middle of its side, in either direction, so every side is mirror symmetric about its middle. `rows` lists the
+// heights a band comes in, all odd, so the square corner block where two bands meet has a middle cell.
 type Band = {
   rows: number[];
   rule: (s: number, e: number, h: number) => number;
@@ -149,7 +150,7 @@ const zig = (s: number, h: number) => {
 };
 const BANDS: readonly Band[] = [
   // Zigzag
-  { rows: [3, 4], rule: (s, e, h) => (e === zig(s, h) ? 1 : 0) },
+  { rows: [3, 5], rule: (s, e, h) => (e === zig(s, h) ? 1 : 0) },
   // Diamond lattice: two zigzags crossing, an accent in each diamond
   {
     rows: [3, 5],
@@ -174,7 +175,7 @@ const BANDS: readonly Band[] = [
   },
   // Battlement
   {
-    rows: [3, 4],
+    rows: [3, 5],
     rule: (s, e, h) => {
       const k = (s + 1) % 4;
       return k === 0 ||
@@ -304,13 +305,23 @@ const between = (
   sums[o0] -
   (sums[o0 + step] - sums[o0]) * f0;
 
-// For each pixel along one axis, the cells it overlaps and the span of each it covers, in texels.
-function spans(pixels: number, cells: number, res: number): number[][] {
-  const per = cells / pixels;
+// For each pixel along one axis, the cells it overlaps and the span of each it covers, in texels. A pixel is
+// `per` cells wide, and the first pixel starts `off` cells into a grid of `cells` cells, as far from its end as
+// the last pixel ends.
+function spans(
+  pixels: number,
+  per: number,
+  off: number,
+  cells: number,
+  res: number,
+): number[][] {
   return Array.from({ length: pixels }, (_, p) => {
     const parts: number[] = [];
-    // The last pixel ends on the last cell's edge exactly, so rounding can't reach a cell past the grid.
-    const [start, end] = [p * per, p + 1 === pixels ? cells : (p + 1) * per];
+    // The last pixel's end is pinned, so rounding can't reach a cell past the grid.
+    const [start, end] = [
+      p * per + off,
+      p + 1 === pixels ? cells - off : (p + 1) * per + off,
+    ];
     for (let i = Math.floor(start); i < end; i++) {
       const [a, b] = [Math.max(start, i) - i, Math.min(end, i + 1) - i];
       if (b > a) parts.push(i, a * res, b * res);
@@ -355,16 +366,20 @@ function draw(
   const scatter = rand() < 0.4;
   const backstitch = rand() < 0.5;
 
-  // The grid: bare cloth around the edge, wide enough that a full-bleed stamp's punch doesn't bite the border,
+  // The design: bare cloth around the edge, wide enough that a full-bleed stamp's punch doesn't bite the border,
   // then the border band, a gap, and the field the motif sits in. Both sides hold an odd number of cells, so
-  // there's a middle cell to mirror about, and the cells stretch a hair to fill the art exactly.
+  // there's a middle cell to mirror about. The short side spans the art. The long side's count depends only on
+  // whether the art is square, since drawFace's rounding shifts the art's exact ratio between the desk and the
+  // detail view. Every other punch's art is at least 1.28 times as long as it's wide, and bare cloth fills
+  // whatever the design leaves. Art of any other shape gets no more than fits.
   const OUTER = 3;
   const GAP = 2;
   const [mw, mh] = [motif[0].length, motif.length];
   const ring = 2 * (OUTER + b + GAP);
   const short = ring + Math.max(mw, mh) + 2 + 2 * Math.floor(rand() * 3);
-  const odd = (x: number) => 2 * Math.round((x - 1) / 2) + 1;
-  const long = odd((short * Math.max(width, height)) / Math.min(width, height));
+  const ratio = Math.max(width, height) / Math.min(width, height);
+  const oddBelow = (x: number) => 2 * Math.floor((x - 1) / 2) + 1;
+  const long = oddBelow(short * Math.min(ratio < 1.1 ? 1 : 1.27, ratio));
   const [cols, rows] = width <= height ? [short, long] : [long, short];
 
   // Each cell's thread, -1 for bare cloth, and whether it's part of the motif, for the backstitch.
@@ -461,8 +476,8 @@ function draw(
 
   // The backstitch: a dark line along every edge between the motif and bare cloth. A cell's left and top edges
   // are its own, flagged in `edges` (1 left, 2 top), and `near` marks cells within one of a line.
-  const edges = new Uint8Array(cols * rows);
-  const near = new Uint8Array(cols * rows);
+  const edges = new Int8Array(cols * rows);
+  const near = new Int8Array(cols * rows);
   let backstitched = false;
   if (backstitch)
     for (let y = 1; y < rows - 1; y++)
@@ -480,8 +495,32 @@ function draw(
           for (let i = -1; i <= 1; i++) near[k + j * cols + i] = 1;
       }
 
+  // The whole art in cells: the design, then bare cloth past it on each side, `ex` whole cells and the part
+  // `offX` of one that falls outside the art. Above and below likewise.
+  const [aw, ah] =
+    width <= height
+      ? [short, (height * short) / width]
+      : [(width * short) / height, short];
+  const [ex, ey] = [Math.ceil((aw - cols) / 2), Math.ceil((ah - rows) / 2)];
+  const [offX, offY] = [ex - (aw - cols) / 2, ey - (ah - rows) / 2];
+  const [gridCols, gridRows] = [cols + 2 * ex, rows + 2 * ey];
+  const grow = (design: Int8Array, empty: number) => {
+    const grid = new Int8Array(gridCols * gridRows).fill(empty);
+    for (let y = 0; y < rows; y++)
+      grid.set(
+        design.subarray(y * cols, (y + 1) * cols),
+        (y + ey) * gridCols + ex,
+      );
+    return grid;
+  };
+  const [grid, gridEdges, gridNear] = [
+    grow(cells, -1),
+    grow(edges, 0),
+    grow(near, 0),
+  ];
+
   // The tiles, at two texels or more per pixel up to 2048 px.
-  const cellPx = Math.min(width / cols, height / rows);
+  const cellPx = width / aw;
   const res = cellPx <= 12 ? 32 : cellPx <= 32 ? 64 : 128;
   const bare = table(res, 1, (u, v, out) => {
     out[0] = cloth(u, v);
@@ -492,8 +531,9 @@ function draw(
   // span and down to every texel row: [cloth] for a bare cell, [cloth, thread, sheen] for a stitch. A part's
   // integral over a pixel is then the difference between two of those rows.
   const W = res + 1;
-  const xs = spans(width, cols, res);
-  const ys = spans(height, rows, res);
+  const [sx, sy] = [aw / width, ah / height];
+  const xs = spans(width, sx, offX, gridCols, res);
+  const ys = spans(height, sy, offY, gridRows, res);
   const first = new Int32Array(width + 1);
   for (let px = 0; px < width; px++)
     first[px + 1] = first[px] + xs[px].length / 3;
@@ -527,17 +567,16 @@ function draw(
     }
 
   // Each stitch's thread, and how it catches the light, a little different from its neighbors'.
-  const tones = new Float64Array(cols * rows * 3);
-  for (let k = 0; k < cols * rows; k++)
-    if (cells[k] >= 0) {
-      const tone = 0.95 + 0.1 * hash2(k % cols, Math.floor(k / cols), salt);
-      for (let c = 0; c < 3; c++)
-        tones[k * 3 + c] = threads[cells[k]][c] * tone;
+  const tones = new Float64Array(gridCols * gridRows * 3);
+  for (let k = 0; k < gridCols * gridRows; k++)
+    if (grid[k] >= 0) {
+      const tone =
+        0.95 + 0.1 * hash2(k % gridCols, Math.floor(k / gridCols), salt);
+      for (let c = 0; c < 3; c++) tones[k * 3 + c] = threads[grid[k]][c] * tone;
     }
 
-  const area = (res * cols * res * rows) / (width * height);
+  const area = res * res * sx * sy;
   const thick = 0.07; // half the backstitch's width, in cells
-  const [sx, sy] = [cols / width, rows / height];
   const [white, cr, cg, cb] = [
     255 / area,
     clothRgb[0] / area,
@@ -553,7 +592,7 @@ function draw(
       const xp = xs[px];
       let [red, green, blue] = [0, 0, 0];
       for (let r = 0; r < yp.length; r += 3) {
-        const row = yp[r] * cols;
+        const row = yp[r] * gridCols;
         const [c0, c1] = [yp[r + 1], yp[r + 2]];
         const [i0, i1] = [
           Math.min(Math.floor(c0), res - 1),
@@ -562,7 +601,7 @@ function draw(
         const [f0, f1] = [c0 - i0, c1 - i1];
         for (let q = 0, g = first[px]; q < xp.length; q += 3, g++) {
           const k = row + xp[q];
-          if (cells[k] < 0) {
+          if (grid[k] < 0) {
             const v = between(bareCols, g * W + i0, g * W + i1, f0, f1, 1);
             red += v * cr;
             green += v * cg;
@@ -590,13 +629,14 @@ function draw(
       let close = false;
       if (backstitched)
         for (let y = j0; y <= j1 && !close; y++)
-          for (let x = i0; x <= i1; x++) if (near[y * cols + x]) close = true;
+          for (let x = i0; x <= i1; x++)
+            if (gridNear[y * gridCols + x]) close = true;
       if (close) {
         const [ux0, ux1, uy0, uy1] = [
-          px * sx,
-          (px + 1) * sx,
-          py * sy,
-          (py + 1) * sy,
+          px * sx + offX,
+          (px + 1) * sx + offX,
+          py * sy + offY,
+          (py + 1) * sy + offY,
         ];
         // The area of a line from (ax, ay) to (bx, by), a thin rectangle, inside the pixel.
         const line = (ax: number, ay: number, bx: number, by: number) => {
@@ -605,13 +645,17 @@ function draw(
           return ox > 0 && oy > 0 ? ox * oy : 0;
         };
         let cover = 0;
-        for (let y = Math.max(j0 - 1, 0); y <= Math.min(j1 + 1, rows - 1); y++)
+        for (
+          let y = Math.max(j0 - 1, 0);
+          y <= Math.min(j1 + 1, gridRows - 1);
+          y++
+        )
           for (
             let x = Math.max(i0 - 1, 0);
-            x <= Math.min(i1 + 1, cols - 1);
+            x <= Math.min(i1 + 1, gridCols - 1);
             x++
           ) {
-            const e = edges[y * cols + x];
+            const e = gridEdges[y * gridCols + x];
             if (e & 1) cover += line(x, y, x, y + 1);
             if (e & 2) cover += line(x, y, x + 1, y);
           }
