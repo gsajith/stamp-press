@@ -28,32 +28,34 @@ shape or a dense even texture, no fine detail under 2 px, a clear figure against
 
 Difficulty: S = an afternoon, M = a day or two, L = a week. "Stampy" = how much it reads as a stamp.
 
-| Style | Difficulty | Stampy | Notes |
-|---|---|---|---|
-| Landscape silhouette (layered ridges, sun disc, sky gradient) | S | High | Noise ridgelines, 3 to 5 layers lerped to the horizon colour. Classic scenic stamp. |
-| Bauhaus / Swiss geometric grid | S | High | Grid of cells, each a circle, quarter circle, half disc or triangle in a 3-ink palette. |
-| Truchet tiles | S | Medium-high | Quarter-arc or diagonal tiles, random rotation. Multi-scale Truchet looks richer. |
-| Riso overprint (2 to 3 offset shapes, multiply blend) | S | High | `globalCompositeOperation = "multiply"` plus a 1 to 3 px misregistration per ink. Doubles as a shared layer. |
-| Halftone portrait or object | M | High | Draw a shape to an offscreen canvas, then resample as dots on a rotated grid. |
-| Memphis pattern | S | Medium | Scattered squiggles, zigzags, dots, confetti on a pastel field. Busy, reads as a pattern stamp. |
-| Op-art (concentric rings, warped stripes) | S | Medium-high | Stripe field bent by a bulge function. Strong at tiny sizes because contrast is high. |
-| Topographic contours | M | Medium | Noise field, marching squares, stroke iso-lines. Good map stamp with a pin or label. |
-| Flow field lines | M | Medium | Pretty, but thin lines mush at small size. Use thick strokes and few lines. |
-| Botanical L-system | M | High | Single plant centred on a plain field. Reads like a flora series stamp. |
-| Pixel art sprite | S | Medium-high | Mirrored random mask, 8 to 16 px grid scaled up crisp. Fun "8-bit post" series. |
-| Mondrian / cubic disarray | S | Medium | Recursive splits with 3 fills. Easy, a bit generic alone. |
-| Linocut / woodcut | L | High | Needs carved hatch lines clipped to shapes and rough edges. Hard to make convincing. |
-| Mosaic / Voronoi tiles | M | Medium | Voronoi cells with a grout gap, coloured from a hidden image. |
-| Guilloche rosette | S | Very high | Parametric spirograph curves. Banknote and stamp security look in about 30 lines. |
-| Mid-century illustration (flat shapes, grain) | L | Very high | Needs composed subjects (birds, rockets, fruit). Best as a later "subject" style. |
+| Style                                                         | Difficulty | Stampy      | Notes                                                                                                        |
+| ------------------------------------------------------------- | ---------- | ----------- | ------------------------------------------------------------------------------------------------------------ |
+| Landscape silhouette (layered ridges, sun disc, sky gradient) | S          | High        | Noise ridgelines, 3 to 5 layers lerped to the horizon colour. Classic scenic stamp.                          |
+| Bauhaus / Swiss geometric grid                                | S          | High        | Grid of cells, each a circle, quarter circle, half disc or triangle in a 3-ink palette.                      |
+| Truchet tiles                                                 | S          | Medium-high | Quarter-arc or diagonal tiles, random rotation. Multi-scale Truchet looks richer.                            |
+| Riso overprint (2 to 3 offset shapes, multiply blend)         | S          | High        | `globalCompositeOperation = "multiply"` plus a 1 to 3 px misregistration per ink. Doubles as a shared layer. |
+| Halftone portrait or object                                   | M          | High        | Draw a shape to an offscreen canvas, then resample as dots on a rotated grid.                                |
+| Memphis pattern                                               | S          | Medium      | Scattered squiggles, zigzags, dots, confetti on a pastel field. Busy, reads as a pattern stamp.              |
+| Op-art (concentric rings, warped stripes)                     | S          | Medium-high | Stripe field bent by a bulge function. Strong at tiny sizes because contrast is high.                        |
+| Topographic contours                                          | M          | Medium      | Noise field, marching squares, stroke iso-lines. Good map stamp with a pin or label.                         |
+| Flow field lines                                              | M          | Medium      | Pretty, but thin lines mush at small size. Use thick strokes and few lines.                                  |
+| Botanical L-system                                            | M          | High        | Single plant centred on a plain field. Reads like a flora series stamp.                                      |
+| Pixel art sprite                                              | S          | Medium-high | Mirrored random mask, 8 to 16 px grid scaled up crisp. Fun "8-bit post" series.                              |
+| Mondrian / cubic disarray                                     | S          | Medium      | Recursive splits with 3 fills. Easy, a bit generic alone.                                                    |
+| Linocut / woodcut                                             | L          | High        | Needs carved hatch lines clipped to shapes and rough edges. Hard to make convincing.                         |
+| Mosaic / Voronoi tiles                                        | M          | Medium      | Voronoi cells with a grout gap, coloured from a hidden image.                                                |
+| Guilloche rosette                                             | S          | Very high   | Parametric spirograph curves. Banknote and stamp security look in about 30 lines.                            |
+| Mid-century illustration (flat shapes, grain)                 | L          | Very high   | Needs composed subjects (birds, rockets, fruit). Best as a later "subject" style.                            |
 
 ## 3. Code and articles
 
 Flow fields and noise
+
 - Tyler Hobbs, "Flow Fields" essay (angle grid, step length, start points, distortions).
   https://www.tylerxhobbs.com/words/flow-fields
 
 Tiles and grids
+
 - Multi-scale Truchet tiles in JS, with geometry explained. https://alexwlchan.net/2025/truchet-tiles/
 - p5 Truchet basics. https://happycoding.io/tutorials/p5js/images/truchet-tiles
 - Generative Artistry tutorials: Tiled Lines, Cubic Disarray, Joy Division, Mondrian, all Canvas2D.
@@ -64,6 +66,7 @@ Tiles and grids
 - Memphis pattern generator (Paper.js). https://github.com/leomuehlfeld/Memphis-Pattern-Generator
 
 Print effects
+
 - p5.riso: ink layers, halftones, overprint. https://antiboredom.github.io/p5.riso/
 - Codrops, risograph with WebGL (one pass per ink). https://tympanus.net/codrops/2024/06/27/digital-meets-physical-risograph-printing-with-webgl/
 - Halftone on Canvas2D from scratch. https://anderoonies.github.io/projects/halftone
@@ -72,6 +75,7 @@ Print effects
 - Linocut from JS, and why texture is the hard part. https://meowni.ca/posts/tree-rings/
 
 Subjects
+
 - Layered mountain landscape (p5). https://github.com/erdry/a-sun-day and
   https://editor.p5js.org/jonfroehlich/sketches/KFDQe5sbQ
 - SVG landscape write-up (sunset palette via midpoint colour). https://kwa.ng/procedurally-generated-svg-landscapes
