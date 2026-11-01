@@ -6,23 +6,23 @@ type Nav = {
   back(): void;
 };
 
-// The state on the history entry an open detail view adds.
-const ENTRY = { detail: true };
-const isEntry = (state: unknown) =>
-  (state as { detail?: unknown } | null)?.detail === true;
-
 // Ported from the blind box. Keeps the detail view and the browser history in step, so the browser's Back
 // closes the view. Opening pushes an entry, and closing goes Back past it, so the desk's own entry is
 // where Back starts from again. The address stays as it is.
 export function detailHistory(nav: Nav) {
   let open = false;
   let closing = false;
+  // The state on the entries this page adds. Its token tells them from an earlier page load's, which a reload
+  // leaves in the history: those are just more desk entries.
+  const entry = { detail: Math.random() };
+  const isEntry = (state: unknown) =>
+    (state as { detail?: unknown } | null)?.detail === entry.detail;
 
   return {
     // Adds the open view's entry, unless one is already open.
     show() {
       if (open) return;
-      nav.pushState(ENTRY, "");
+      nav.pushState(entry, "");
       open = true;
       closing = false;
     },

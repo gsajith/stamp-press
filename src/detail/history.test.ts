@@ -2,8 +2,8 @@ import { describe, expect, it } from "vitest";
 import { detailHistory } from "./history";
 
 // A browser history to drive by hand: a list of entries' states and where we are in it.
-function fakeHistory() {
-  const entries: unknown[] = [null];
+function fakeHistory(start: unknown = null) {
+  const entries: unknown[] = [start];
   let at = 0;
   const nav = {
     backs: 0,
@@ -81,6 +81,14 @@ describe("detailHistory", () => {
     // So the next view's close goes Back to the desk, not onto the old entry.
     h.show();
     h.close();
+    expect(h.popped()).toBe(true);
+  });
+
+  it("closes on the first try after a reload left the page on an old view's entry", () => {
+    const nav = fakeHistory({ detail: 0.5 });
+    const h = detailHistory(nav);
+    h.show();
+    expect(h.close()).toBe(false);
     expect(h.popped()).toBe(true);
   });
 
