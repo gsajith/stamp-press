@@ -16,6 +16,7 @@ import { paperMarbling1 } from "./styles/paperMarbling";
 import { philatelicError1 } from "./styles/philatelicError";
 import { pixelSprite1 } from "./styles/pixelSprite";
 import { risoOverprint1 } from "./styles/risoOverprint";
+import { seashell1 } from "./styles/seashell";
 import { skyChart1 } from "./styles/skyChart";
 import { steelEngraving1 } from "./styles/steelEngraving";
 import { truchetTiles1 } from "./styles/truchetTiles";
@@ -78,6 +79,7 @@ export const STYLES: readonly Style[] = [
   crossStitch1,
   islandSurvey1,
   philatelicError1,
+  seashell1,
 ];
 
 // Style versions no longer pressed. They stay registered so their share links keep working: when a new
