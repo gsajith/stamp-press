@@ -1,7 +1,7 @@
 // How the detail view shows its stamp, in CSS pixels: `pan` moves its center off the screen's center (x right,
 // y down) and `zoom` scales it up from fitting the screen.
 export type View = { pan: [number, number]; zoom: number };
-type Screen = { width: number; height: number };
+export type Screen = { width: number; height: number };
 
 export const ZOOM = { min: 1, max: 4 } as const;
 export const UNMOVED: View = { pan: [0, 0], zoom: 1 };
