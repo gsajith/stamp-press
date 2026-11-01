@@ -2,6 +2,7 @@ import { PALETTES_1, type Palette } from "./palettes";
 import { pick, randomSeed, subSeed } from "./random";
 import type { StampRef } from "./ref";
 import { bauhausGrid1 } from "./styles/bauhausGrid";
+import { botanicalLSystem1 } from "./styles/botanicalLSystem";
 import { landscapeSilhouette1 } from "./styles/landscapeSilhouette";
 import { pixelSprite1 } from "./styles/pixelSprite";
 import { risoOverprint1 } from "./styles/risoOverprint";
@@ -52,6 +53,7 @@ export const STYLES: readonly Style[] = [
   pixelSprite1,
   risoOverprint1,
   truchetTiles1,
+  botanicalLSystem1,
 ];
 
 // Style versions no longer pressed. They stay registered so their share links keep working: when a new
