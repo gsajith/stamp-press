@@ -39,13 +39,17 @@ A shared set of two to four inks and a paper tone that a stamp is printed in, pi
 _Avoid_: Theme, color scheme
 
 **Drop**:
-One stamp falling from above and landing art up on the desk, a step away from the previous stamp.
+One stamp falling from above and landing art up on the desk. A lone drop lands a step away from the previous stamp, and the camera follows it. A drop in a burst lands somewhere on the desk already on screen.
 _Avoid_: Spawn, pull, roll
+
+**Burst**:
+Presses that come while an earlier drop is still falling, or within about a second of the last press. The camera holds still for a burst, and its drops spread across the screen.
+_Avoid_: Spam, combo
 
 ### Places
 
 **Desk**:
-The paper surface stamps fall onto and pile up on.
+The paper surface stamps fall onto and scatter across.
 _Avoid_: Floor, table, canvas
 
 **Detail view**:

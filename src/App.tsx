@@ -1,33 +1,29 @@
-import { useCallback, useEffect, useRef, useState } from "react";
-import Scene, { type DeskStamp } from "./scene/Scene";
-import { pressStampRef, resolveStamp } from "./stamp";
+import { useCallback, useEffect, useReducer, useRef } from "react";
+import { deskReducer, EMPTY_DESK } from "./desk/desk";
+import { visibleArea } from "./scene/camera";
+import Scene from "./scene/Scene";
+import { pressStampRef } from "./stamp";
 import "./App.css";
-
-// Drops land around one spot for now, scattered a little so they overlap like mail.
-const SCATTER = 0.25;
-
-function newStamp(id: number): DeskStamp {
-  const stamp = resolveStamp(pressStampRef())!;
-  const r = Math.random;
-  return {
-    id,
-    stamp,
-    drop: {
-      spot: [(r() * 2 - 1) * SCATTER, (r() * 2 - 1) * SCATTER],
-      yaw: (r() * 2 - 1) * 0.35,
-      flutter: [r() * 6.3, r() * 6.3, 2.2 + r() * 1.5, 2.8 + r() * 1.5],
-    },
-  };
-}
 
 export default function App() {
   // One stamp drops on first load.
-  const [stamps, setStamps] = useState(() => [newStamp(0)]);
+  const [desk, dispatch] = useReducer(deskReducer, EMPTY_DESK, (empty) =>
+    deskReducer(empty, { type: "load", ref: pressStampRef() }),
+  );
   const button = useRef<HTMLButtonElement>(null);
+  // The desk refuses a press while too many stamps are still falling. The scene fills the window, so the
+  // window's shape sets how much desk a burst can spread over.
   const press = useCallback(
-    () => setStamps((all) => [...all, newStamp(all.length)]),
+    () =>
+      dispatch({
+        type: "press",
+        ref: pressStampRef(),
+        at: performance.now(),
+        area: visibleArea(innerWidth / innerHeight),
+      }),
     [],
   );
+  const land = useCallback((id: number) => dispatch({ type: "land", id }), []);
 
   // Space and Enter press the button from anywhere. On the button itself, its own click handles them.
   useEffect(() => {
@@ -44,7 +40,7 @@ export default function App() {
 
   return (
     <main>
-      <Scene stamps={stamps} />
+      <Scene desk={desk} onLand={land} />
       <button
         ref={button}
         className="press"
