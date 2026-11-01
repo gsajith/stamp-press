@@ -22,6 +22,8 @@ describe("truchet tiles 1", () => {
     expect(sha(pixels(1, 39, 50))).toBe("cb986b09c239a5a0");
     expect(sha(pixels(2, 50, 39))).toBe("a019905bf7c42224");
     expect(sha(pixels(3, 44, 44))).toBe("db52d04ea331f54f");
+    // Large enough that only edge pixels are supersampled, as at desk size and in the detail view.
+    expect(sha(pixels(7, 160, 200))).toBe("41dfa95a14d9b570");
   });
 
   it("draws different art for different seeds", () => {
