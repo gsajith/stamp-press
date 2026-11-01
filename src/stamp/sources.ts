@@ -11,6 +11,7 @@ import { midCentury1 } from "./styles/midCentury";
 import { pixelSprite1 } from "./styles/pixelSprite";
 import { risoOverprint1 } from "./styles/risoOverprint";
 import { seashell1 } from "./styles/seashell";
+import { skyChart1 } from "./styles/skyChart";
 import { truchetTiles1 } from "./styles/truchetTiles";
 
 // A style: one procedural look, drawn by code from a seed and a palette. It draws in resolution-independent
@@ -63,6 +64,7 @@ export const STYLES: readonly Style[] = [
   halftoneObject1,
   midCentury1,
   linocut1,
+  skyChart1,
   seashell1,
 ];
 
