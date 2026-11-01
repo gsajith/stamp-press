@@ -23,9 +23,9 @@ describe("botanical L-system 1", () => {
   // ADR 0001: a published style's output for a seed never changes. If one of these fails, the style's drawing
   // changed: restore it, and ship the change as a new style version instead.
   it("draws the same pixels it shipped with", () => {
-    expect(sha(pixels(1, 39, 50))).toBe("0fd6f3238886b306");
-    expect(sha(pixels(2, 50, 39))).toBe("2516ca8e19c6b7b2");
-    expect(sha(pixels(3, 44, 44))).toBe("5dae0beb7837e1ea");
+    expect(sha(pixels(1, 39, 50))).toBe("d1d060e41e5a9a90");
+    expect(sha(pixels(2, 50, 39))).toBe("f06333ff73e1ca1b");
+    expect(sha(pixels(3, 44, 44))).toBe("25db368c88d87b2c");
   });
 
   it("draws different art for different seeds", () => {

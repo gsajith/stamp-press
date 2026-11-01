@@ -24,9 +24,11 @@ const mix = (a: Rgb, b: Rgb, t: number): Rgb => [
 const clamp01 = (x: number) => (x < 0 ? 0 : x > 1 ? 1 : x);
 const DEG = Math.PI / 180;
 
-// Cosine and sine of `a` radians from their Taylor series, which uses only exact arithmetic. Accurate to well
-// under a pixel for |a| up to pi.
+// Cosine and sine of `a` radians from their Taylor series, which uses only exact arithmetic. The angle is
+// wrapped into [-pi, pi] first, where the series is accurate to well under a pixel.
 function cosSin(a: number): Pt {
+  while (a > Math.PI) a -= 2 * Math.PI;
+  while (a < -Math.PI) a += 2 * Math.PI;
   let [c, s, term] = [0, 0, 1];
   for (let n = 0; n < 24; n++) {
     if (n % 4 === 0) c += term;
@@ -90,17 +92,21 @@ function grow({ axiom, rules, generations }: Plant, rand: () => number) {
   return word;
 }
 
-// A stroke: a tapered line from `a` to `b` whose radius at a fraction t along it is radius(t). A zero-length
-// stroke is a disc. Units are turtle steps until the plant is fitted to the art, then pixels.
-type Stroke = { a: Pt; b: Pt; radius: (t: number) => number; max: number };
+// A leaf: a tapered line from `a` to `b` whose radius at a fraction t along it is radius(t), at most `max`.
+// Units are turtle steps.
+type Leaf = { a: Pt; b: Pt; radius: (t: number) => number; max: number };
 
-type Layer = { width: number; height: number; cover: Float32Array };
-
-// Paints a stroke's coverage into a layer, keeping the larger where strokes overlap. Coverage comes from the
-// distance to the stroke's center line, so edges stay smooth at any size. A stroke thinner than a pixel draws
-// a pixel wide at matching strength, so thin twigs keep the same weight when the art is drawn small.
-function paint({ width, height, cover }: Layer, { a, b, radius, max }: Stroke) {
-  const pad = Math.max(max, 0.5) + 1;
+// Visits every pixel within `reach` of the line from `a` to `b` (a disc when they're equal), with the pixel's
+// index, the fraction t along the line it's nearest, and its distance from there.
+function paint(
+  width: number,
+  height: number,
+  a: Pt,
+  b: Pt,
+  reach: number,
+  apply: (i: number, t: number, d: number) => void,
+) {
+  const pad = Math.max(reach, 0.5) + 1;
   const x0 = Math.max(0, Math.floor(Math.min(a[0], b[0]) - pad));
   const x1 = Math.min(width, Math.ceil(Math.max(a[0], b[0]) + pad));
   const y0 = Math.max(0, Math.floor(Math.min(a[1], b[1]) - pad));
@@ -112,14 +118,15 @@ function paint({ width, height, cover }: Layer, { a, b, radius, max }: Stroke) {
       const [px, py] = [x + 0.5 - a[0], y + 0.5 - a[1]];
       const t = length2 > 0 ? clamp01((px * ex + py * ey) / length2) : 0;
       const [dx, dy] = [px - t * ex, py - t * ey];
-      const r = radius(t);
-      const c =
-        clamp01(Math.max(r, 0.5) - Math.sqrt(dx * dx + dy * dy) + 0.5) *
-        Math.min(1, 2 * r);
-      const i = y * width + x;
-      if (c > cover[i]) cover[i] = c;
+      apply(y * width + x, t, Math.sqrt(dx * dx + dy * dy));
     }
 }
+
+// How much of a pixel at distance `d` from a line of radius `r` the line covers, so edges stay smooth at any
+// size. A line thinner than a pixel draws a pixel wide at matching strength, so thin twigs keep the same
+// weight when the art is drawn small.
+const coverage = (r: number, d: number) =>
+  clamp01(Math.max(r, 0.5) - d + 0.5) * Math.min(1, 2 * r);
 
 function draw(
   ctx: CanvasRenderingContext2D,
@@ -170,7 +177,7 @@ function draw(
   const bloom = pick([0, 0.08, 0.2], rand);
   const flowerRadius = leafLength * (0.5 + 0.25 * rand());
   const petals = pick([5, 6, 8], rand);
-  const leaves: Stroke[] = [];
+  const leaves: Leaf[] = [];
   const flowers: { at: Pt; spin: number }[] = [];
   for (const { at, dir } of tips) {
     if (rand() < bloom) {
@@ -220,85 +227,82 @@ function draw(
   const taper = 0.62 + 0.12 * rand();
   const hairline = 0.0035 * size;
 
-  const layer = (): Layer => ({
-    width,
-    height,
-    cover: new Float32Array(width * height),
-  });
-  const [stemLayer, leafLayer, veinLayer, petalLayer, heartLayer] = [
-    layer(),
-    layer(),
-    layer(),
-    layer(),
-    layer(),
-  ];
+  // Stems in the darkest ink, leaves in the next (or a lighter darkest ink when there are only two), flowers in
+  // the last ink with a contrasting heart.
+  const paperInk = rgb(paper);
+  const dark = rgb(inks[0]);
+  const leafInk = inks.length > 2 ? rgb(inks[1]) : mix(dark, paperInk, 0.35);
+  const flowerInk = rgb(inks[inks.length - 1]);
+  const heartInk = inks.length > 3 ? rgb(inks[2]) : dark;
+  const field = mix(paperInk, leafInk, 0.05 + 0.08 * rand());
+
+  // The picture as RGB, painted back to front.
+  const color = new Float64Array(width * height * 3);
+  for (let i = 0; i < width * height; i++) color.set(field, i * 3);
+  const over = (i: number, ink: Rgb, c: number) => {
+    for (let k = 0; k < 3; k++)
+      color[i * 3 + k] += (ink[k] - color[i * 3 + k]) * c;
+  };
+
+  // Stems share one coverage layer, keeping the larger where they overlap, so their joins don't darken.
   // Radii by branch order, by repeated multiplying since ** isn't exact in every engine.
+  const stemCover = new Float32Array(width * height);
   const radii = [trunk];
   for (const { order } of stems)
     while (radii.length <= order) radii.push(radii[radii.length - 1] * taper);
   for (const { a, b, order } of stems) {
     const r = Math.max(hairline, radii[order]);
-    paint(stemLayer, { a: toPx(a), b: toPx(b), radius: () => r, max: r });
+    paint(width, height, toPx(a), toPx(b), r, (i, _, d) => {
+      const c = coverage(r, d);
+      if (c > stemCover[i]) stemCover[i] = c;
+    });
   }
+  for (let i = 0; i < width * height; i++) over(i, dark, stemCover[i]);
+
+  // Each leaf over the ones before, in a slightly different tone so overlapping leaves stay apart, with its
+  // midrib, which only shows when the art is drawn large, on top of it alone.
   for (const leaf of leaves) {
-    const [a, b] = [toPx(leaf.a), toPx(leaf.b)];
-    paint(leafLayer, {
-      a,
-      b,
-      radius: (t) => leaf.radius(t) * scale,
-      max: leaf.max * scale,
-    });
-    // The midrib, which only shows when the art is drawn large.
-    const rib = 0.07 * leaf.max * scale;
-    paint(veinLayer, {
-      a,
-      b: [a[0] + (b[0] - a[0]) * 0.85, a[1] + (b[1] - a[1]) * 0.85],
-      radius: () => rib,
-      max: rib,
-    });
+    const ink = mix(leafInk, rand() < 0.5 ? dark : paperInk, 0.18 * rand());
+    const rib = mix(ink, dark, 0.6);
+    const ribRadius = 0.07 * leaf.max * scale;
+    paint(
+      width,
+      height,
+      toPx(leaf.a),
+      toPx(leaf.b),
+      leaf.max * scale,
+      (i, t, d) => {
+        const c = coverage(leaf.radius(t) * scale, d);
+        if (c <= 0) return;
+        over(i, ink, c);
+        if (t < 0.85) over(i, rib, Math.min(c, coverage(ribRadius, d)));
+      },
+    );
   }
+
+  // Each flower over the ones before: a ring of petals and a heart.
   for (const { at, spin } of flowers) {
     const c = toPx(at);
     const R = flowerRadius * scale;
-    for (let i = 0; i < petals; i++) {
-      const [ox, oy] = cosSin(spin + (i * 2 * Math.PI) / petals - Math.PI);
+    for (let k = 0; k < petals; k++) {
+      const [ox, oy] = cosSin(spin + (k * 2 * Math.PI) / petals);
       const petal: Pt = [c[0] + ox * 0.55 * R, c[1] + oy * 0.55 * R];
-      paint(petalLayer, {
-        a: petal,
-        b: petal,
-        radius: () => 0.45 * R,
-        max: 0.45 * R,
-      });
+      paint(width, height, petal, petal, 0.45 * R, (i, _, d) =>
+        over(i, flowerInk, coverage(0.45 * R, d)),
+      );
     }
-    paint(heartLayer, { a: c, b: c, radius: () => 0.3 * R, max: 0.3 * R });
+    paint(width, height, c, c, 0.3 * R, (i, _, d) =>
+      over(i, heartInk, coverage(0.3 * R, d)),
+    );
   }
-
-  // Stems in the darkest ink, leaves in the next (or a lighter darkest ink when there are only two), flowers in
-  // the last ink with a contrasting heart.
-  const dark = rgb(inks[0]);
-  const leafInk = inks.length > 2 ? rgb(inks[1]) : mix(dark, rgb(paper), 0.35);
-  const flowerInk = rgb(inks[inks.length - 1]);
-  const heartInk = inks.length > 3 ? rgb(inks[2]) : dark;
-  const field = mix(rgb(paper), leafInk, 0.05 + 0.08 * rand());
-  const veinInk = mix(leafInk, dark, 0.6);
 
   const image = ctx.createImageData(width, height);
   const data = image.data;
   for (let i = 0; i < width * height; i++) {
-    let color = mix(field, dark, stemLayer.cover[i]);
-    color = mix(color, leafInk, leafLayer.cover[i]);
-    color = mix(
-      color,
-      veinInk,
-      Math.min(veinLayer.cover[i], leafLayer.cover[i]),
-    );
-    color = mix(color, flowerInk, petalLayer.cover[i]);
-    color = mix(color, heartInk, heartLayer.cover[i]);
-    const p = i * 4;
-    data[p] = Math.round(color[0]);
-    data[p + 1] = Math.round(color[1]);
-    data[p + 2] = Math.round(color[2]);
-    data[p + 3] = 255;
+    data[i * 4] = Math.round(color[i * 3]);
+    data[i * 4 + 1] = Math.round(color[i * 3 + 1]);
+    data[i * 4 + 2] = Math.round(color[i * 3 + 2]);
+    data[i * 4 + 3] = 255;
   }
   ctx.putImageData(image, 0, 0);
 }
