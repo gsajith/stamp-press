@@ -9,6 +9,7 @@ import { islandSurvey1 } from "./styles/islandSurvey";
 import { landscapeSilhouette1 } from "./styles/landscapeSilhouette";
 import { linocut1 } from "./styles/linocut";
 import { midCentury1 } from "./styles/midCentury";
+import { paperDiorama1 } from "./styles/paperDiorama";
 import { pixelSprite1 } from "./styles/pixelSprite";
 import { risoOverprint1 } from "./styles/risoOverprint";
 import { skyChart1 } from "./styles/skyChart";
@@ -67,6 +68,7 @@ export const STYLES: readonly Style[] = [
   linocut1,
   skyChart1,
   steelEngraving1,
+  paperDiorama1,
   islandSurvey1,
 ];
 
