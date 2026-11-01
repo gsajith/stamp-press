@@ -10,6 +10,7 @@ import { linocut1 } from "./styles/linocut";
 import { midCentury1 } from "./styles/midCentury";
 import { pixelSprite1 } from "./styles/pixelSprite";
 import { risoOverprint1 } from "./styles/risoOverprint";
+import { specimenDrawer1 } from "./styles/specimenDrawer";
 import { truchetTiles1 } from "./styles/truchetTiles";
 
 // A style: one procedural look, drawn by code from a seed and a palette. It draws in resolution-independent
@@ -62,6 +63,7 @@ export const STYLES: readonly Style[] = [
   halftoneObject1,
   midCentury1,
   linocut1,
+  specimenDrawer1,
 ];
 
 // Style versions no longer pressed. They stay registered so their share links keep working: when a new
