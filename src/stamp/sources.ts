@@ -1,6 +1,7 @@
 import { PALETTES_1, type Palette } from "./palettes";
 import { pick, randomSeed, subSeed } from "./random";
 import type { StampRef } from "./ref";
+import { bauhausGrid1 } from "./styles/bauhausGrid";
 import { guillocheRosette1 } from "./styles/guillocheRosette";
 import { landscapeSilhouette1 } from "./styles/landscapeSilhouette";
 
@@ -45,6 +46,7 @@ export function styleSource(
 // style, so adding one never changes an existing reference's stamp.
 export const STYLES: readonly Style[] = [
   landscapeSilhouette1,
+  bauhausGrid1,
   guillocheRosette1,
 ];
 
