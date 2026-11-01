@@ -6,7 +6,14 @@ import {
   RigidBody,
   useRapier,
 } from "@react-three/rapier";
-import { memo, type RefObject, useEffect, useMemo, useRef } from "react";
+import {
+  memo,
+  type RefObject,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { type Camera, type Group, Vector3 } from "three";
 import type { DeskStamp } from "../desk/desk";
 import { punchGeometry, resolveStamp, type Stamp } from "../stamp";
@@ -19,11 +26,18 @@ import { stampGeometry, stampTexture, THICKNESS } from "./stampMesh";
 const LAUNCH_DISTANCE = 2;
 // Below this height, on the way down, physics takes over the flight so the stamp can land on the pile.
 const HANDOFF = 0.3;
-// With reduced motion a stamp skips the fling and settles onto its spot from this height.
-const SETTLE_HEIGHT = 0.5;
+// With reduced motion a stamp skips the fling and drops onto its spot from this height.
+const REDUCED_MOTION_HEIGHT = 0.5;
 // The height over which a falling stamp's flutter dies away, so it lands flat.
 const FLUTTER_HEIGHT = 1.2;
 const TILT = 0.5;
+// After landing, a stamp settles until it has nearly stopped, or for at most SETTLE_TIME, then it's fixed in
+// place. Thin bodies resting on each other otherwise keep trading contact impulses and bounce. It always gets
+// MIN_SETTLE first: on the contact frame a stamp can sit inside the desk with almost no speed, and freezing it
+// then would leave it buried until Rapier has pushed it back out.
+const MIN_SETTLE = 0.25;
+const SETTLE_TIME = 0.6;
+const REST_SPEED = 0.05;
 // How far the flutter sways a stamp side to side.
 const SWAY = 0.12;
 
@@ -41,10 +55,11 @@ type Flight = {
 // front of the camera, arcs away over the desk, and flutters down onto its spot: the art tilts and sways side to
 // side once it's away from the press, both fading out near the desk. The script flies it as a kinematic body
 // with its collider off, so stamps in the air pass through each other. With reduced motion it skips the fling
-// and settles onto its spot from just above. Near the desk it becomes a thin dynamic body with heavy drag that
+// and drops onto its spot from just above. Near the desk it becomes a thin dynamic body with heavy drag that
 // can only turn about the vertical, so physics lands it art up on whatever lies there. It reports its first
-// touch with `onLand`, and Rapier puts it to sleep once settled. A stamp that isn't `shown` stays on the desk as
-// a body alone, its mesh and texture released until it comes back into range.
+// touch with `onLand`. Shortly after landing the body is fixed in place, so a pile of thin stamps can't jostle.
+// A stamp that isn't `shown` stays on the desk as a body alone, its mesh and texture released until it comes
+// back into range.
 export const StampBody = memo(function StampBody({
   entry: { id, ref, drop },
   shown,
@@ -69,6 +84,8 @@ export const StampBody = memo(function StampBody({
   // desk, and has landed from its first contact there, with the desk or a stamp already lying on it.
   const phase = useRef<"press" | "flying" | "falling" | "landed">("press");
   const flight = useRef<Flight>(null);
+  const settling = useRef(0);
+  const [fixed, setFixed] = useState(false);
   useFrame(({ camera, clock, gl }, dt) => {
     const b = body.current;
     const c = collider.current;
@@ -79,7 +96,7 @@ export const StampBody = memo(function StampBody({
       // Stamps in the air pass through each other. Only once physics has it does a stamp touch anything.
       c.setEnabled(false);
       const from: Vec3 = matchMedia("(prefers-reduced-motion: reduce)").matches
-        ? [drop.spot[0], SETTLE_HEIGHT, drop.spot[1]]
+        ? [drop.spot[0], REDUCED_MOTION_HEIGHT, drop.spot[1]]
         : launchPoint(camera, gl.domElement, press.current);
       flight.current = { from, ...aimFling(from, drop.spot), t: 0, at: from };
       b.setTranslation({ x: from[0], y: from[1], z: from[2] }, true);
@@ -88,6 +105,16 @@ export const StampBody = memo(function StampBody({
     }
     a.visible = true;
     if (phase.current === "landed") {
+      if (!fixed) {
+        settling.current += dt;
+        const v = b.linvel();
+        if (
+          settling.current > SETTLE_TIME ||
+          (settling.current > MIN_SETTLE &&
+            Math.hypot(v.x, v.y, v.z) < REST_SPEED)
+        )
+          setFixed(true);
+      }
       // Ease the last of the tilt out rather than snapping flat.
       if (a.rotation.x === 0 && a.rotation.z === 0) return;
       const k = Math.exp(-12 * dt);
@@ -116,8 +143,11 @@ export const StampBody = memo(function StampBody({
         // Hand over to physics at the speed the script was flying it. A long frame can carry the script below
         // the desk, so the hand-off stays just above it.
         phase.current = "falling";
-        b.setBodyType(rapier.RigidBodyType.Dynamic, true);
+        // The body takes its mass from enabled colliders, so it needs the collider back before it can weigh
+        // anything. Without mass, contacts can't stop it and it sinks through the desk.
         c.setEnabled(true);
+        b.recomputeMassPropertiesFromColliders();
+        b.setBodyType(rapier.RigidBodyType.Dynamic, true);
         b.setTranslation(
           { x: at[0], y: Math.max(at[1], 0.05), z: at[2] },
           true,
@@ -146,7 +176,8 @@ export const StampBody = memo(function StampBody({
   return (
     <RigidBody
       ref={body}
-      type="kinematicPosition"
+      // Flying stamps start kinematic and switch to dynamic in the frame loop. A settled stamp is fixed.
+      type={fixed ? "fixed" : "kinematicPosition"}
       // Parked high over its spot, clear of the desk's stamps, until its first frame moves it to the press.
       position={[drop.spot[0], 100, drop.spot[1]]}
       rotation={[0, drop.yaw, 0]}
