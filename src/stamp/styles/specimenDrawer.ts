@@ -873,7 +873,8 @@ function ellipse(
   const ex = x / rx;
   const ey = (y - cy) / ry;
   const k = Math.sqrt(ex * ex + ey * ey);
-  if (k > 1.5) return 0;
+  // Past here the outline is at least `px` away, so nothing shows, however soft the edge.
+  if (k > 1 + px / Math.min(rx, ry)) return 0;
   // Distance square to the outline, from the gradient of k.
   const g = Math.sqrt((ex / rx) * (ex / rx) + (ey / ry) * (ey / ry));
   return edge(((1 - k) * k) / (g > 0 ? g : 1), px);

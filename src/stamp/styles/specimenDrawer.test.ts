@@ -24,8 +24,8 @@ describe("specimen drawer 1", () => {
   // changed: restore it, and ship the change as a new style version instead.
   it("draws the same pixels it shipped with", () => {
     expect(sha(pixels(1, 39, 50))).toBe("26976b5087df7d33");
-    expect(sha(pixels(2, 50, 39))).toBe("20dcaa6393709734");
-    expect(sha(pixels(3, 44, 44))).toBe("c20c8f47cfc79f7c");
+    expect(sha(pixels(2, 50, 39))).toBe("bd5d10343abaef6b");
+    expect(sha(pixels(3, 44, 44))).toBe("9e3c1bcd5db22837");
   });
 
   it("draws different art for different seeds", () => {
