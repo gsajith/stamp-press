@@ -10,6 +10,7 @@ import { linocut1 } from "./styles/linocut";
 import { midCentury1 } from "./styles/midCentury";
 import { pixelSprite1 } from "./styles/pixelSprite";
 import { risoOverprint1 } from "./styles/risoOverprint";
+import { skyChart1 } from "./styles/skyChart";
 import { steelEngraving1 } from "./styles/steelEngraving";
 import { truchetTiles1 } from "./styles/truchetTiles";
 
@@ -63,6 +64,7 @@ export const STYLES: readonly Style[] = [
   halftoneObject1,
   midCentury1,
   linocut1,
+  skyChart1,
   steelEngraving1,
 ];
 
