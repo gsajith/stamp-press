@@ -49,7 +49,7 @@ _Avoid_: Spam, combo
 ### Places
 
 **Desk**:
-The paper surface stamps fall onto and pile up on.
+The paper surface stamps fall onto and scatter across.
 _Avoid_: Floor, table, canvas
 
 **Detail view**:

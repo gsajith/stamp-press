@@ -7,7 +7,7 @@ import {
 import { memo, useEffect, useMemo, useRef } from "react";
 import type { Group } from "three";
 import type { DeskStamp } from "../desk/desk";
-import { punchGeometry, resolveStamp } from "../stamp";
+import { punchGeometry, resolveStamp, type Stamp } from "../stamp";
 import { stampGeometry, stampTexture, THICKNESS } from "./stampMesh";
 
 export const DROP_HEIGHT = 4;
@@ -19,7 +19,8 @@ const SWAY = 0.35;
 // One stamp falling like light paper: a thin rigid body with heavy drag that can only turn about the
 // vertical, so it always lands art up. The flutter is scripted on top: the art tilts and the body sways side
 // to side, both fading out as it nears the desk and ending when it first touches down, which it reports with
-// `onLand`. Once settled, Rapier puts the body to sleep. A stamp that isn't `shown` stays on the desk unrendered.
+// `onLand`. Once settled, Rapier puts the body to sleep. A stamp that isn't `shown` stays on the desk as a body
+// alone, its mesh and texture released until it comes back into range.
 export const StampBody = memo(function StampBody({
   entry: { id, ref, drop },
   shown,
@@ -33,24 +34,10 @@ export const StampBody = memo(function StampBody({
   const stamp = useMemo(() => resolveStamp(ref)!, [ref]);
   const body = useRef<RapierRigidBody>(null);
   const art = useRef<Group>(null);
-  const anisotropy = useThree((s) => s.gl.capabilities.getMaxAnisotropy());
   const { width, height } = punchGeometry(stamp.punch);
-  const geometry = useMemo(() => stampGeometry(stamp), [stamp]);
-  const texture = useMemo(() => {
-    const t = stampTexture(stamp);
-    t.anisotropy = anisotropy;
-    return t;
-  }, [stamp, anisotropy]);
-  useEffect(
-    () => () => {
-      geometry.dispose();
-      texture.dispose();
-    },
-    [geometry, texture],
-  );
 
   const [p1, p2, w1, w2] = drop.flutter;
-  // Set on the first contact, with the desk or with a stamp already on the pile. From then on physics has it.
+  // Set on the first contact, with the desk or with a stamp already lying there. From then on physics has it.
   const landed = useRef(false);
   useFrame(({ clock }, dt) => {
     const b = body.current;
@@ -104,20 +91,39 @@ export const StampBody = memo(function StampBody({
         args={[width / 2, THICKNESS / 2, height / 2]}
         friction={0.9}
       />
-      <group ref={art} visible={shown}>
-        <mesh geometry={geometry} castShadow receiveShadow>
-          <meshStandardMaterial
-            attach="material-0"
-            map={texture}
-            roughness={0.85}
-          />
-          <meshStandardMaterial
-            attach="material-1"
-            color={stamp.palette.paper}
-            roughness={0.9}
-          />
-        </mesh>
-      </group>
+      <group ref={art}>{shown && <StampMesh stamp={stamp} />}</group>
     </RigidBody>
   );
 });
+
+// A stamp's punched paper and printed face. Its geometry and texture live only while it's mounted.
+function StampMesh({ stamp }: { stamp: Stamp }) {
+  const anisotropy = useThree((s) => s.gl.capabilities.getMaxAnisotropy());
+  const geometry = useMemo(() => stampGeometry(stamp), [stamp]);
+  const texture = useMemo(() => {
+    const t = stampTexture(stamp);
+    t.anisotropy = anisotropy;
+    return t;
+  }, [stamp, anisotropy]);
+  useEffect(
+    () => () => {
+      geometry.dispose();
+      texture.dispose();
+    },
+    [geometry, texture],
+  );
+  return (
+    <mesh geometry={geometry} castShadow receiveShadow>
+      <meshStandardMaterial
+        attach="material-0"
+        map={texture}
+        roughness={0.85}
+      />
+      <meshStandardMaterial
+        attach="material-1"
+        color={stamp.palette.paper}
+        roughness={0.9}
+      />
+    </mesh>
+  );
+}
