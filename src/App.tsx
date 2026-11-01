@@ -21,7 +21,7 @@ export default function App() {
       ref: pressStampRef(),
     }),
   );
-  // The open stamp's pan and zoom, which the detail view's gestures write and the scene reads every frame.
+  // The open stamp's pan, zoom and tilt, which the detail view's gestures write and the scene reads every frame.
   const [view] = useState<{ current: View }>(() => ({ current: UNMOVED }));
   // Stamps fling out of the button, so the scene reads where it sits on screen.
   const button = useRef<HTMLButtonElement>(null);

@@ -6,16 +6,19 @@ import {
   type Mesh,
   type MeshBasicMaterial,
   type PerspectiveCamera,
+  type PointLight,
   Quaternion,
   type Texture,
   Vector3,
 } from "three";
 import type { DeskStamp } from "../desk/desk";
+import { lean, settle } from "../detail/tilt";
 import type { View } from "../detail/view";
 import { punchGeometry, resolveStamp } from "../stamp";
 import { DESK_COLOR } from "./Desk";
 import type { Placed } from "./placed";
 import { StampMesh } from "./StampBody";
+import type { Painted } from "./face.worker";
 import { DETAIL_TEXTURE, faceTexture } from "./stampMesh";
 
 // How far in front of the camera the stamp floats, in desk units. Its scale, not its distance, makes it fill
@@ -27,26 +30,38 @@ const FILL = 0.8;
 const LIFT_TIME = 0.45;
 // How far the desk fades behind the stamp once it's up.
 const BACKDROP = 0.75;
+// The sheen light (see the scene's): a soft white light up and to the left, between the camera and the stamp,
+// whose sheen slides across the paper as it tilts. In camera space, in desk units, with its reach kept short
+// of the desk.
+export const SHEEN = {
+  at: [-0.8, 0.9, -0.9],
+  intensity: 0.7,
+  reach: 2.4,
+} as const;
 
 // Turns a stamp lying face up, its top away from the camera, to face the camera upright.
 const FACING = new Quaternion().setFromEuler(new Euler(Math.PI / 2, 0, 0));
 const ease = (t: number) => (t < 0.5 ? 4 * t ** 3 : 1 - (-2 * t + 2) ** 3 / 2);
 
 // The detail view's stamp, in the Canvas: the open stamp, drawn here in place of its desk mesh, lifts from
-// where it lies to float face on in front of the camera, while the desk fades behind it. There it pans and
-// zooms with `view`, which the detail view's gestures write. It lifts with its desk texture while a worker
-// redraws it at DETAIL_TEXTURE, swaps that in when it's ready, and releases it on unmount. `leaving` takes it
-// back down, then `onDown`.
+// where it lies to float face on in front of the camera, while the desk fades behind it. There it pans, zooms
+// and tilts with `view`, which the detail view's gestures write, and this runs the tilt's spring. A visitor
+// who prefers reduced motion gets no tilt. The scene's `sheen` light, which this brings up close, puts a sheen
+// on the paper that slides across as it tilts. It lifts with its desk texture while a worker redraws it at
+// DETAIL_TEXTURE, with the height map that embosses its punched edge, swaps those in when they're ready, and
+// releases them on unmount. `leaving` takes it back down, then `onDown`.
 export function Lifted({
   entry,
   placed,
   view,
+  sheen,
   leaving,
   onDown,
 }: {
   entry: DeskStamp;
   placed: Placed;
   view: RefObject<View>;
+  sheen: RefObject<PointLight | null>;
   leaving: boolean;
   onDown: () => void;
 }) {
@@ -57,20 +72,26 @@ export function Lifted({
   const anisotropy = useThree((s) => s.gl.capabilities.getMaxAnisotropy());
   const group = useRef<Group>(null);
   const backdrop = useRef<Mesh>(null);
+  const [still] = useState(
+    () => matchMedia("(prefers-reduced-motion: reduce)").matches,
+  );
   // The lift's progress: 0 on the desk, 1 up.
   const t = useRef(0);
   const down = useRef(false);
-  const [face, setFace] = useState<Texture | null>(null);
-  const wanted = !leaving && !face;
+  const [detail, setDetail] = useState<{
+    face: Texture;
+    relief: Texture;
+  } | null>(null);
+  const wanted = !leaving && !detail;
   useEffect(() => {
     if (!wanted) return;
     const worker = new Worker(new URL("./face.worker.ts", import.meta.url), {
       type: "module",
     });
-    worker.onmessage = ({ data }: MessageEvent<ImageBitmap>) => {
-      const texture = faceTexture(data);
-      texture.anisotropy = anisotropy;
-      setFace(texture);
+    worker.onmessage = ({ data }: MessageEvent<Painted>) => {
+      const face = faceTexture(data.face);
+      face.anisotropy = anisotropy;
+      setDetail({ face, relief: faceTexture(data.relief, true) });
     };
     // If it fails, the stamp stays at desk size.
     worker.postMessage({ ref: entry.ref, size: DETAIL_TEXTURE });
@@ -78,11 +99,20 @@ export function Lifted({
   }, [wanted, entry.ref, anisotropy]);
   useEffect(
     () => () => {
-      face?.dispose();
-      (face?.image as ImageBitmap | undefined)?.close();
+      for (const texture of detail ? [detail.face, detail.relief] : []) {
+        texture.dispose();
+        (texture.image as ImageBitmap).close();
+      }
     },
-    [face],
+    [detail],
   );
+  // The light stays in the scene, dark, once the stamp is down.
+  useEffect(() => {
+    const light = sheen.current;
+    return () => {
+      if (light) light.intensity = 0;
+    };
+  }, [sheen]);
 
   // Where it lies on the desk, read as it opens: a stamp only opens once it has landed and gone still.
   const [from] = useState(() => {
@@ -102,6 +132,8 @@ export function Lifted({
       position: new Vector3(),
       quaternion: new Quaternion(),
       along: new Vector3(),
+      tilt: new Quaternion(),
+      euler: new Euler(),
     }),
     [],
   );
@@ -109,7 +141,8 @@ export function Lifted({
   useFrame((_, delta) => {
     const g = group.current;
     const b = backdrop.current;
-    if (!g || !b) return;
+    const l = sheen.current;
+    if (!g || !b || !l) return;
     const step = (leaving ? -delta : delta) / LIFT_TIME;
     t.current = Math.min(1, Math.max(0, t.current + step));
     const e = ease(t.current);
@@ -118,8 +151,13 @@ export function Lifted({
     const tall = 2 * DISTANCE * Math.tan((camera.fov * Math.PI) / 360);
     const fit = FILL * Math.min((tall * camera.aspect) / width, tall / height);
     const pixel = tall / size.height;
-    const { pan, zoom } = view.current;
-    const { position, quaternion, along } = scratch;
+    if (!still)
+      view.current = {
+        ...view.current,
+        tilt: settle(view.current.tilt, delta),
+      };
+    const { pan, zoom, tilt: leaning } = view.current;
+    const { position, quaternion, along, tilt, euler } = scratch;
     position
       .copy(camera.position)
       .add(along.set(0, 0, -DISTANCE).applyQuaternion(camera.quaternion))
@@ -128,7 +166,9 @@ export function Lifted({
           .set(pan[0] * pixel, -pan[1] * pixel, 0)
           .applyQuaternion(camera.quaternion),
       );
-    quaternion.copy(camera.quaternion).multiply(FACING);
+    // Leans about the screen's axes, then faces the camera.
+    tilt.setFromEuler(euler.set(...lean(leaning, zoom), 0));
+    quaternion.copy(camera.quaternion).multiply(tilt).multiply(FACING);
     g.position.lerpVectors(from.position, position, e);
     g.quaternion.slerpQuaternions(from.quaternion, quaternion, e);
     g.scale.setScalar(1 + (fit * zoom - 1) * e);
@@ -139,6 +179,10 @@ export function Lifted({
       .add(along.set(0, 0, -DISTANCE - 1).applyQuaternion(camera.quaternion));
     b.quaternion.copy(camera.quaternion);
     (b.material as MeshBasicMaterial).opacity = BACKDROP * e;
+    l.position
+      .copy(camera.position)
+      .add(along.set(...SHEEN.at).applyQuaternion(camera.quaternion));
+    l.intensity = SHEEN.intensity * e;
 
     if (leaving && t.current === 0 && !down.current) {
       down.current = true;
@@ -160,7 +204,12 @@ export function Lifted({
         />
       </mesh>
       <group ref={group}>
-        <StampMesh stamp={stamp} face={face} onTop />
+        <StampMesh
+          stamp={stamp}
+          face={detail?.face}
+          relief={detail?.relief}
+          onTop
+        />
       </group>
     </>
   );

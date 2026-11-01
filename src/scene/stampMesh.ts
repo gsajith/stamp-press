@@ -53,14 +53,15 @@ export function deskTexture(stamp: Stamp): CanvasTexture {
   return texture;
 }
 
-// The detail view's large face, painted off the main thread (see face.worker.ts). An ImageBitmap ignores
-// flipY, so its rows run top down: the texture flips them back as it samples.
-export function faceTexture(bitmap: ImageBitmap): Texture {
+// A texture across the stamp's face from a bitmap painted off the main thread (see face.worker.ts): the detail
+// view's large face, or with `linear`, its embossed edge's height map. An ImageBitmap ignores flipY, so its
+// rows run top down: the texture flips them back as it samples.
+export function faceTexture(bitmap: ImageBitmap, linear = false): Texture {
   const texture = new Texture(bitmap);
   texture.flipY = false;
   texture.repeat.set(1, -1);
   texture.offset.set(0, 1);
-  texture.colorSpace = SRGBColorSpace;
+  if (!linear) texture.colorSpace = SRGBColorSpace;
   texture.needsUpdate = true;
   return texture;
 }
