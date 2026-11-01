@@ -243,7 +243,7 @@ function draw(
       bins.push(whole ? [whole] : near);
     }
 
-  // Samples per pixel side. The edges between fills run under the straps, so they never show while a strap is
+  // Samples per pixel side. The edges between fills run under the straps, so they mostly hide while a strap is
   // wider than a sample. Desk draws, whose short side is about 200 px, need one sample; smaller ones get more.
   const n = Math.min(8, Math.ceil(192 / unit));
   const px = 1 / (unit * n * edge); // a sample's width in edges
@@ -291,18 +291,23 @@ function draw(
     // The two straps crossing at the midpoint: one leans forward along the edge, one back.
     const forward = strapDistance(qa, b, -s, c, tile.length);
     const back = strapDistance(qa, b, -s, -c, tile.length);
-    const region = c * -qa > s * Math.abs(b) ? tile.fill : rosette;
-    cr = region[0];
-    cg = region[1];
-    cb = region[2];
+    // The star's edge runs along whichever ray is on the point's side of the midpoint, and `inside` is how far
+    // in from it the point is. The fill blends across it, since the breaks in interlaced straps show it.
+    const inside = clamp01((c * -qa - s * Math.abs(b)) / px + 0.5);
+    const fr = rosette[0] + (tile.fill[0] - rosette[0]) * inside;
+    const fg = rosette[1] + (tile.fill[1] - rosette[1]) * inside;
+    const fb = rosette[2] + (tile.fill[2] - rosette[2]) * inside;
+    cr = fr;
+    cg = fg;
+    cb = fb;
     if (interlaced) {
       // The forward strap passes over: the back one, then the break, then the forward one on top. Following a
       // strap, its crossings alternate, since it reaches each corner forward and leaves it back.
       band(back);
       const t = cover(forward, half + gap, px);
-      cr += (region[0] - cr) * t;
-      cg += (region[1] - cg) * t;
-      cb += (region[2] - cb) * t;
+      cr += (fr - cr) * t;
+      cg += (fg - cg) * t;
+      cb += (fb - cb) * t;
       band(forward);
     } else band(Math.min(forward, back));
     red += cr;

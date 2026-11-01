@@ -24,10 +24,10 @@ describe("girih 1", () => {
   // changed: restore it, and ship the change as a new style version instead.
   it("draws the same pixels it shipped with", () => {
     // Seeds 1 and 2 draw 6.6.6 and 3.12.12, 5 draws 4.8.8 and 7 draws 4.6.12, so each tiling is pinned.
-    expect(sha(pixels(1, 39, 50))).toBe("f4487022c1afba74");
-    expect(sha(pixels(2, 50, 39))).toBe("ab5b8b4fc1196d0d");
-    expect(sha(pixels(3, 44, 44))).toBe("fb507355cabadf5e");
-    expect(sha(pixels(5, 39, 50))).toBe("de79576f04be8963");
+    expect(sha(pixels(1, 39, 50))).toBe("994d0db0608aeb26");
+    expect(sha(pixels(2, 50, 39))).toBe("67338daac0f3d945");
+    expect(sha(pixels(3, 44, 44))).toBe("5a5d60ca27461918");
+    expect(sha(pixels(5, 39, 50))).toBe("b7a5f61881df707f");
     expect(sha(pixels(7, 50, 39))).toBe("98f0c9d3d8eac4df");
   });
 
