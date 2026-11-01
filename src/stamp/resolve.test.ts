@@ -33,11 +33,19 @@ describe("resolving a stamp reference", () => {
   });
 
   it("resolves each registered style as its own source", () => {
-    for (const style of STYLES) {
-      const stamp = resolveStamp({ source: style.id, seed: 7 })!;
-      expect(stamp.art.style).toBe(style);
-      // A style id must be a valid source id, or its references can't round-trip.
-      const ref = { source: style.id, seed: 7 };
+    for (const style of STYLES)
+      expect(resolveStamp({ source: style.id, seed: 7 })!.art.style).toBe(
+        style,
+      );
+  });
+
+  // Retired styles included. A duplicate id would send one style's links to the other's art, and an id outside
+  // the reference grammar would give links that don't parse.
+  it("registers every source under a unique id that round-trips", () => {
+    const ids = SOURCES.map((s) => s.id);
+    expect(new Set(ids).size).toBe(ids.length);
+    for (const source of ids) {
+      const ref = { source, seed: 7 };
       expect(parseStampRef(formatStampRef(ref))).toEqual(ref);
     }
   });
