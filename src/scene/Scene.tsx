@@ -4,7 +4,7 @@ import { type RefObject, Suspense, useRef, useState } from "react";
 import type { DirectionalLight, PointLight } from "three";
 import { type Desk as DeskState, isNearFocus } from "../desk/desk";
 import type { View } from "../detail/view";
-import { backoff, FOV, VIEW } from "./camera";
+import { backoff, DISTANCE, FOV, VIEW } from "./camera";
 import { Desk, DESK_COLOR } from "./Desk";
 import { Lifted, SHEEN } from "./Lifted";
 import type { Placed } from "./placed";
@@ -90,11 +90,16 @@ export default function Scene({
         // Untoned, so the paper stays paper white and the inks print as drawn.
         flat
         dpr={[1, 2]}
-        camera={{ fov: FOV, position: [...VIEW], near: 0.1, far: 60 }}
+        camera={{
+          fov: FOV,
+          position: [...VIEW],
+          near: 0.1,
+          far: 60 * DISTANCE,
+        }}
         aria-hidden
       >
         <color attach="background" args={[DESK_COLOR]} />
-        <fog attach="fog" args={[DESK_COLOR, 9, 22]} />
+        <fog attach="fog" args={[DESK_COLOR, 9 * DISTANCE, 22 * DISTANCE]} />
         <CameraRig focus={focus} sun={sun} />
         <Rings placed={placed} rings={rings} />
         <hemisphereLight args={["#ffffff", "#e4e4e4", 1.7]} />
@@ -107,10 +112,10 @@ export default function Scene({
           shadow-mapSize={[2048, 2048]}
           shadow-bias={-0.0004}
           shadow-normalBias={0.01}
-          shadow-camera-left={-4}
-          shadow-camera-right={4}
-          shadow-camera-top={4}
-          shadow-camera-bottom={-4}
+          shadow-camera-left={-4 * DISTANCE}
+          shadow-camera-right={4 * DISTANCE}
+          shadow-camera-top={4 * DISTANCE}
+          shadow-camera-bottom={-4 * DISTANCE}
         />
         <pointLight
           ref={sheen}

@@ -149,10 +149,10 @@ export function linkUrl(href: string, link: string | null): string {
   return url.href;
 }
 
-// The camera frames a few desk units around its center, even backed off on a phone, so stamps further than
+// The camera frames several desk units around its center, even backed off on a phone, so stamps further than
 // this from it can't be on screen and stop rendering. The camera only moves on along the trail, so the trail
 // behind it fades out of the scene while staying on the desk.
-const RENDER_RADIUS = 8;
+const RENDER_RADIUS = 14;
 
 export function isNearFocus(desk: Desk, stamp: DeskStamp): boolean {
   const [x, z] = desk.focus;

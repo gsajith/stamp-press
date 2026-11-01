@@ -1,8 +1,11 @@
 import { PerspectiveCamera, Plane, Ray, Vector3 } from "three";
 import type { Area, Spot } from "../desk/desk";
 
+// How far back the camera sits, as a multiple of its first framing, where a stamp filled 40% of the screen
+// and read as a postcard. Fog, shadows, culling and the launch point scale with it.
+export const DISTANCE = 1.8;
 // Where the camera looks from, relative to the spot it looks at: tilted down and round to one side.
-export const VIEW = [0.6, 3.3, 2.4] as const;
+export const VIEW = [0.6 * DISTANCE, 3.3 * DISTANCE, 2.4 * DISTANCE] as const;
 export const FOV = 35;
 
 // How far the camera backs off along VIEW on a narrow screen, so a stamp keeps its margins on a phone.
