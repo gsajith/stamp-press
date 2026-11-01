@@ -3,6 +3,7 @@ import { pick, randomSeed, subSeed } from "./random";
 import type { StampRef } from "./ref";
 import { bauhausGrid1 } from "./styles/bauhausGrid";
 import { landscapeSilhouette1 } from "./styles/landscapeSilhouette";
+import { pixelSprite1 } from "./styles/pixelSprite";
 import { risoOverprint1 } from "./styles/risoOverprint";
 
 // A style: one procedural look, drawn by code from a seed and a palette. It draws in resolution-independent
@@ -47,6 +48,7 @@ export function styleSource(
 export const STYLES: readonly Style[] = [
   landscapeSilhouette1,
   bauhausGrid1,
+  pixelSprite1,
   risoOverprint1,
 ];
 
