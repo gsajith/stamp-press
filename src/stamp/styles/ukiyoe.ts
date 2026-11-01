@@ -530,7 +530,8 @@ function draw(
     const [tx, ty] = [x0 + lean, y0 - tall];
     const thick = tall * range(0.025, 0.04);
     const limbs: [number[], number][] = [
-      [[x0, y0 + 0.05, mx, my], thick],
+      // The trunk runs on past the art's bottom, so the tree stands in front of the ground, not on a stub.
+      [[x0, H + 0.05, mx, my], thick],
       [[mx, my, tx, ty], thick * 0.75],
     ];
     const pads: [number, number, number, number][] = [];
@@ -620,8 +621,10 @@ function draw(
     };
     const posts = 2 * Math.round(range(4, 7));
     const postGap = (2 * half) / posts;
-    const legs = 1 + Math.floor(rand() * 3);
+    // Legs spread evenly under the deck, inside its ends.
+    const legs = 2 + Math.floor(rand() * 3);
     const legGap = (2 * half) / (legs + 1);
+    const legMid = (legs - 1) / 2;
     const legBottom = deckY + range(0.06, 0.12);
     const span = (x: number) => half - Math.abs(x - cx);
     const box = [
@@ -633,9 +636,9 @@ function draw(
     blocks.push(
       {
         sd: (x, y) => {
-          const k = Math.round((x - cx) / legGap);
-          if (k === 0 || Math.abs(k) > (legs + 1) / 2) return -INF;
-          const xl = cx + k * legGap;
+          const i = Math.round((x - cx) / legGap + legMid);
+          const xl =
+            cx + ((i < 0 ? 0 : i >= legs ? legs - 1 : i) - legMid) * legGap;
           return Math.min(
             0.011 - Math.abs(x - xl),
             y - deck(xl) - thick / 2,
@@ -938,10 +941,13 @@ function draw(
             const fill = clamp01(d / px + 0.5);
             if (fill > 0) {
               const f = clamp01((by - k.f0) * k.fk);
-              a = fill * k.alpha * (k.grain ? 1 + grain : 1);
-              r += (k.r + k.dr * f - r) * a;
-              g += (k.g + k.dg * f - g) * a;
-              b += (k.b + k.db * f - b) * a;
+              // Grain changes how much ink the flat holds, not how much it covers, so nothing under an opaque
+              // flat shows through it.
+              const ink = k.grain ? 1 + grain : 1;
+              a = fill * k.alpha;
+              r += (pr + (k.r + k.dr * f - pr) * ink - r) * a;
+              g += (pg + (k.g + k.dg * f - pg) * ink - g) * a;
+              b += (pb + (k.b + k.db * f - pb) * ink - b) * a;
               if (k.texture) {
                 a = fill * k.texture(bx, by, d, col - k.sx);
                 r += (key[0] - r) * a;

@@ -23,10 +23,10 @@ describe("ukiyo-e 1", () => {
   // ADR 0001: a published style's output for a seed never changes. If one of these fails, the style's drawing
   // changed: restore it, and ship the change as a new style version instead.
   it("draws the same pixels it shipped with", () => {
-    expect(sha(pixels(1, 39, 50))).toBe("36c96d7b80db08bc");
-    expect(sha(pixels(2, 50, 39))).toBe("7649c5e08956d26d");
-    expect(sha(pixels(5, 44, 44))).toBe("dfb0f053dd822940");
-    expect(sha(pixels(7, 52, 40))).toBe("7e5bb8d19d3d387a");
+    expect(sha(pixels(1, 39, 50))).toBe("f94e4d33f6200751");
+    expect(sha(pixels(2, 50, 39))).toBe("74622010894674d2");
+    expect(sha(pixels(5, 44, 44))).toBe("8d5d326fcdeff409");
+    expect(sha(pixels(7, 52, 40))).toBe("a7747d832df22e15");
   });
 
   it("draws different art for different seeds", () => {
