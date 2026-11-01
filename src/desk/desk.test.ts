@@ -84,7 +84,7 @@ describe("desk", () => {
   });
 
   it("drops every rapid press, up to 8 stamps in flight, and refuses the rest", () => {
-    // The first-load stamp is still falling, so 7 presses fill the air.
+    // The first-load stamp is still in the air, so 7 presses fill the air.
     const full = run([load, ...mash(7, 200, 0)]);
     expect(full.stamps).toHaveLength(8);
     expect(run(mash(3, 300, 800), full)).toBe(full);
@@ -100,7 +100,7 @@ describe("desk", () => {
     const center = spotOf(before, 1);
 
     it("holds the camera where it is", () => {
-      // While a drop is still falling.
+      // While a drop is still in the air.
       expect(run([press(51, 5000)], before).focus).toEqual(center);
       // Or within a second of the last press, even with everything landed.
       expect(run([land(1), press(51, 600)], before).focus).toEqual(center);

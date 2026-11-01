@@ -13,7 +13,7 @@ import "./App.css";
 const SHARED_OPEN_DELAY = 700;
 
 export default function App() {
-  // One stamp drops on first load: the one a share link names, or a fresh press.
+  // One stamp flings out of the press on first load: the one a share link names, or a fresh press.
   const [desk, dispatch] = useReducer(deskReducer, EMPTY_DESK, (empty) =>
     deskReducer(empty, {
       type: "load",
@@ -23,7 +23,9 @@ export default function App() {
   );
   // The open stamp's pan and zoom, which the detail view's gestures write and the scene reads every frame.
   const [view] = useState<{ current: View }>(() => ({ current: UNMOVED }));
-  // The desk refuses a press while too many stamps are still falling. The scene fills the window, so the
+  // Stamps fling out of the button, so the scene reads where it sits on screen.
+  const button = useRef<HTMLButtonElement>(null);
+  // The desk refuses a press while too many stamps are still in the air. The scene fills the window, so the
   // window's shape sets how much desk a burst can spread over.
   const press = useCallback(
     () =>
@@ -92,8 +94,15 @@ export default function App() {
     <main>
       {/* Behind the detail view, the desk and its controls are out of reach. */}
       <div className="desk" inert={desk.open !== null}>
-        <Scene desk={desk} view={view} onLand={land} onOpen={open} />
+        <Scene
+          desk={desk}
+          view={view}
+          press={button}
+          onLand={land}
+          onOpen={open}
+        />
         <button
+          ref={button}
           className="press"
           type="button"
           onClick={press}

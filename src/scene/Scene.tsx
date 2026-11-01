@@ -57,14 +57,18 @@ function CameraRig({
 // The desk in 3D, and a focus ring over each stamp lying on screen, in drop order, so the keyboard and screen
 // readers reach them too. Clicking a stamp or pressing a ring asks to open it with `onOpen`. The open stamp
 // lifts into the detail view, panned and zoomed by `view`, and stays lifted until it has settled back.
+//
+// Stamps fling out of the `press` button, so the scene needs to know where it sits on screen.
 export default function Scene({
   desk,
   view,
+  press,
   onLand,
   onOpen,
 }: {
   desk: DeskState;
   view: RefObject<View>;
+  press: RefObject<HTMLElement | null>;
   onLand: (id: number) => void;
   onOpen: (id: number) => void;
 }) {
@@ -115,6 +119,7 @@ export default function Scene({
                 shown={isNearFocus(desk, entry)}
                 lifted={entry.id === lifted}
                 placed={placed}
+                press={press}
                 onLand={onLand}
                 onOpen={onOpen}
               />
