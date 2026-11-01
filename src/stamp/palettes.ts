@@ -5,8 +5,8 @@ export type Palette = {
   inks: readonly string[];
 };
 
-// The shared palette set. A published art source version freezes the list it was built with (see sources.ts),
-// so don't edit or reorder these: add new palettes to a new list for the next source version.
+// The shared palette set. Every published style picks its palette from this list by index, so don't edit,
+// reorder or add to it: that would reprint existing stamps. New palettes go in a new list for new styles.
 export const PALETTES_1: readonly Palette[] = [
   { id: "harbor", paper: "#f4ecd8", inks: ["#1d3557", "#457b9d", "#e63946"] },
   { id: "desert", paper: "#f6e7cf", inks: ["#5b2a1e", "#c8553d", "#f2a65a"] },

@@ -1,23 +1,18 @@
 import { useCallback, useEffect, useReducer, useRef } from "react";
 import { deskReducer, EMPTY_DESK } from "./desk/desk";
 import Scene from "./scene/Scene";
-import { CURRENT_SOURCE, randomSeed, type StampRef } from "./stamp";
+import { pressStampRef } from "./stamp";
 import "./App.css";
-
-const freshRef = (): StampRef => ({
-  source: CURRENT_SOURCE,
-  seed: randomSeed(),
-});
 
 export default function App() {
   // One stamp drops on first load.
   const [desk, dispatch] = useReducer(deskReducer, EMPTY_DESK, (empty) =>
-    deskReducer(empty, { type: "load", ref: freshRef() }),
+    deskReducer(empty, { type: "load", ref: pressStampRef() }),
   );
   const button = useRef<HTMLButtonElement>(null);
   // The desk refuses a press while too many stamps are still falling.
   const press = useCallback(
-    () => dispatch({ type: "press", ref: freshRef() }),
+    () => dispatch({ type: "press", ref: pressStampRef() }),
     [],
   );
   const land = useCallback((id: number) => dispatch({ type: "land", id }), []);

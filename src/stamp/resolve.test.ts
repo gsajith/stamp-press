@@ -1,20 +1,24 @@
 import { describe, expect, it } from "vitest";
 import {
   artInset,
-  CURRENT_SOURCE,
-  proceduralSource,
+  formatStampRef,
+  parseStampRef,
+  pressStampRef,
   punchGeometry,
   resolveStamp,
+  SOURCES,
+  STYLES,
+  styleSource,
+  type Style,
 } from ".";
 
 const seeds = Array.from({ length: 300 }, (_, i) => i * 7919 + 1);
-const stamps = seeds.map(
-  (seed) => resolveStamp({ source: CURRENT_SOURCE, seed })!,
-);
+const stamps = seeds.map((seed) => resolveStamp({ source: "land1", seed })!);
+const testStyle = (id: string): Style => ({ id, draw: () => {} });
 
 describe("resolving a stamp reference", () => {
   it("gives the same stamp for the same reference", () => {
-    const ref = { source: CURRENT_SOURCE, seed: 90210 };
+    const ref = { source: "land1", seed: 90210 };
     expect(resolveStamp(ref)).toEqual(resolveStamp({ ...ref }));
   });
 
@@ -28,19 +32,47 @@ describe("resolving a stamp reference", () => {
     expect(count((s) => s.margin > 0)).toBe(2);
   });
 
-  // ADR 0001: a published source keeps resolving a seed to the same stamp. If this fails, restore the old
-  // behavior and ship the change as a new source version instead.
-  it("resolves procedural1 seeds to the stamps it shipped with", () => {
+  it("resolves each registered style as its own source", () => {
+    for (const style of STYLES)
+      expect(resolveStamp({ source: style.id, seed: 7 })!.art.style).toBe(
+        style,
+      );
+  });
+
+  // Retired styles included. A duplicate id would send one style's links to the other's art, and an id outside
+  // the reference grammar would give links that don't parse.
+  it("registers every source under a unique id that round-trips", () => {
+    const ids = SOURCES.map((s) => s.id);
+    expect(new Set(ids).size).toBe(ids.length);
+    for (const source of ids) {
+      const ref = { source, seed: 7 };
+      expect(parseStampRef(formatStampRef(ref))).toEqual(ref);
+    }
+  });
+
+  it("keeps every existing reference's stamp when a style is added", () => {
+    const refs = [1, 2, 3, 90210, 0xffffffff].map((seed) => ({
+      source: "land1",
+      seed,
+    }));
+    const before = refs.map((ref) => resolveStamp(ref));
+    const more = [...SOURCES, styleSource(testStyle("extra1"))];
+    expect(refs.map((ref) => resolveStamp(ref, more))).toEqual(before);
+  });
+
+  // ADR 0001: a published style keeps resolving a seed to the same stamp. If this fails, restore the old
+  // behavior and ship the change as a new style version instead.
+  it("resolves land1 seeds to the stamps it shipped with", () => {
     const summary = [1, 2, 3].map((seed) => {
       const { art, palette, punch, margin } = resolveStamp({
-        source: "procedural1",
+        source: "land1",
         seed,
       })!;
       return [art.style.id, art.seed, palette.id, punch, margin];
     });
     expect(summary).toEqual([
       [
-        "landscape-silhouette-1",
+        "land1",
         1983344870,
         "riso",
         {
@@ -51,7 +83,7 @@ describe("resolving a stamp reference", () => {
         0.07318961856188252,
       ],
       [
-        "landscape-silhouette-1",
+        "land1",
         1290762667,
         "harbor",
         {
@@ -62,7 +94,7 @@ describe("resolving a stamp reference", () => {
         0.07723850482143463,
       ],
       [
-        "landscape-silhouette-1",
+        "land1",
         2075127583,
         "brick",
         {
@@ -76,9 +108,9 @@ describe("resolving a stamp reference", () => {
   });
 
   // The same rule for how those stamps are cut and where their art sits: one seed per aspect, plus a full bleed.
-  it("cuts procedural1 stamps the way it shipped", () => {
+  it("cuts land1 stamps the way it shipped", () => {
     const cut = [1, 3, 5, 8].map((seed) => {
-      const stamp = resolveStamp({ source: "procedural1", seed })!;
+      const stamp = resolveStamp({ source: "land1", seed })!;
       const { width, height, outline, inner } = punchGeometry(stamp.punch);
       return [
         width,
@@ -130,17 +162,36 @@ describe("resolving a stamp reference", () => {
   });
 
   it("only picks palettes the style accepts", () => {
-    const fussy = {
-      id: "fussy-1",
-      palettes: ["harbor", "ochre"],
-      draw: () => {},
-    };
-    const source = proceduralSource("test1", [fussy]);
+    const fussy = { ...testStyle("fussy1"), palettes: ["harbor", "ochre"] };
+    const source = styleSource(fussy);
     const picked = new Set(
       seeds.map(
-        (seed) => resolveStamp({ source: "test1", seed }, [source])!.palette.id,
+        (seed) =>
+          resolveStamp({ source: "fussy1", seed }, [source])!.palette.id,
       ),
     );
     expect(picked).toEqual(new Set(["harbor", "ochre"]));
+  });
+});
+
+describe("pressing a stamp", () => {
+  const styles = ["a1", "b1", "c1"].map(testStyle);
+
+  it("picks a style from the current list with its own randomness", () => {
+    expect(pressStampRef(styles, () => 0).source).toBe("a1");
+    expect(pressStampRef(styles, () => 0.5).source).toBe("b1");
+    expect(pressStampRef(styles, () => 0.99).source).toBe("c1");
+  });
+
+  it("draws a fresh seed independent of the style", () => {
+    const presses = Array.from({ length: 20 }, () =>
+      pressStampRef(styles, () => 0),
+    );
+    expect(new Set(presses.map((r) => r.seed)).size).toBe(20);
+  });
+
+  it("presses the registered styles by default", () => {
+    const ids = STYLES.map((s) => s.id);
+    expect(ids).toContain(pressStampRef().source);
   });
 });

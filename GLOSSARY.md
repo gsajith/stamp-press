@@ -23,11 +23,11 @@ The plain paper between a stamp's art and its punched edge. A full-bleed stamp h
 _Avoid_: Border, gutter
 
 **Art source**:
-Where a stamp's art comes from, such as procedural code, a library of art, or an image model.
+Where a stamp's art comes from, such as a procedural style, a library of art, or an image model. A stamp's reference names its art source and its seed, like `land1-1z141z3`.
 _Avoid_: Provider, generator, backend
 
 **Style**:
-One procedural look, such as a landscape silhouette or a guilloche rosette, drawn by code from a seed. The procedural art source is a set of styles.
+One procedural look, such as a landscape silhouette or a guilloche rosette, drawn by code from a seed. Each style is its own art source, addressed directly in a stamp's reference by its versioned id, such as `land1`.
 _Avoid_: Generator, theme, template
 
 **Seed**:

@@ -8,7 +8,7 @@ import {
   isNearFocus,
 } from "./desk";
 
-const ref = (seed: number): StampRef => ({ source: "procedural1", seed });
+const ref = (seed: number): StampRef => ({ source: "land1", seed });
 const run = (events: DeskEvent[], from: Desk = EMPTY_DESK) =>
   events.reduce(deskReducer, from);
 const load: DeskEvent = { type: "load", ref: ref(1) };

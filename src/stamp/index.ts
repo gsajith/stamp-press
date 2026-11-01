@@ -2,8 +2,10 @@
 export { formatStampRef, parseStampRef, type StampRef } from "./ref";
 export { artInset, drawArt, drawFace, resolveStamp, type Stamp } from "./stamp";
 export {
-  CURRENT_SOURCE,
-  proceduralSource,
+  pressStampRef,
+  SOURCES,
+  STYLES,
+  styleSource,
   type ArtSource,
   type Style,
 } from "./sources";

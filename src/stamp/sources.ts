@@ -1,11 +1,13 @@
 import { PALETTES_1, type Palette } from "./palettes";
-import { pick, stream, subSeed } from "./random";
+import { pick, randomSeed, subSeed } from "./random";
+import type { StampRef } from "./ref";
 import { landscapeSilhouette1 } from "./styles/landscapeSilhouette";
 
 // A style: one procedural look, drawn by code from a seed and a palette. It draws in resolution-independent
 // units, so the same seed at 256 px and 2048 px is the same picture. `id` carries a version: per ADR 0001 a
 // published style's output never changes, so a change ships as a new style with a new id.
 export type Style = {
+  // Lowercase letters then digits-or-letters, no dash, such as `land1`: it's the source id in share links.
   id: string;
   // The ids of the palettes this style accepts. Every palette when absent.
   palettes?: readonly string[];
@@ -26,26 +28,34 @@ export type ArtSource = {
   art(seed: number): { style: Style; seed: number };
 };
 
-// The procedural art source: the seed picks one of `styles`. A version's lists are frozen, since adding a style
-// or palette would change which stamp an existing seed resolves to. Ship new styles and palettes as a new
-// version, such as `procedural2`, and keep the old one registered so its share links keep working.
-export function proceduralSource(
-  id: string,
-  styles: readonly Style[],
+// The art source for one procedural style: its id is the style's id, and the seed drives the stamp within it.
+export function styleSource(
+  style: Style,
   palettes: readonly Palette[] = PALETTES_1,
 ): ArtSource {
   return {
-    id,
+    id: style.id,
     palettes,
-    art: (seed) => ({
-      style: pick(styles, stream(seed, 0x51ed270b)),
-      seed: subSeed(seed, 0x2c1b3c6d),
-    }),
+    art: (seed) => ({ style, seed: subSeed(seed, 0x2c1b3c6d) }),
   };
 }
 
-export const SOURCES: readonly ArtSource[] = [
-  proceduralSource("procedural1", [landscapeSilhouette1]),
-];
-// The source new presses draw from: the newest procedural version.
-export const CURRENT_SOURCE = "procedural1";
+// The styles a press picks from. To add a style, add one line here and nothing else: a reference names its
+// style, so adding one never changes an existing reference's stamp.
+export const STYLES: readonly Style[] = [landscapeSilhouette1];
+
+// Style versions no longer pressed. They stay registered so their share links keep working: when a new
+// version replaces a style in STYLES, move the old one here.
+const RETIRED_STYLES: readonly Style[] = [];
+
+export const SOURCES: readonly ArtSource[] = [...STYLES, ...RETIRED_STYLES].map(
+  (style) => styleSource(style),
+);
+
+// A new press: a style picked at random from `styles`, then a fresh seed that drives the stamp within it.
+export function pressStampRef(
+  styles: readonly Style[] = STYLES,
+  rand: () => number = Math.random,
+): StampRef {
+  return { source: pick(styles, rand).id, seed: randomSeed() };
+}
