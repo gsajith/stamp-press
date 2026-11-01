@@ -4,6 +4,7 @@ import type { StampRef } from "./ref";
 import { bauhausGrid1 } from "./styles/bauhausGrid";
 import { landscapeSilhouette1 } from "./styles/landscapeSilhouette";
 import { pixelSprite1 } from "./styles/pixelSprite";
+import { risoOverprint1 } from "./styles/risoOverprint";
 
 // A style: one procedural look, drawn by code from a seed and a palette. It draws in resolution-independent
 // units, so the same seed at 256 px and 2048 px is the same picture. `id` carries a version: per ADR 0001 a
@@ -48,6 +49,7 @@ export const STYLES: readonly Style[] = [
   landscapeSilhouette1,
   bauhausGrid1,
   pixelSprite1,
+  risoOverprint1,
 ];
 
 // Style versions no longer pressed. They stay registered so their share links keep working: when a new
