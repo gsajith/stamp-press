@@ -10,6 +10,7 @@ import { landscapeSilhouette1 } from "./styles/landscapeSilhouette";
 import { linocut1 } from "./styles/linocut";
 import { midCentury1 } from "./styles/midCentury";
 import { paperDiorama1 } from "./styles/paperDiorama";
+import { paperMarbling1 } from "./styles/paperMarbling";
 import { pixelSprite1 } from "./styles/pixelSprite";
 import { risoOverprint1 } from "./styles/risoOverprint";
 import { skyChart1 } from "./styles/skyChart";
@@ -69,6 +70,7 @@ export const STYLES: readonly Style[] = [
   skyChart1,
   steelEngraving1,
   paperDiorama1,
+  paperMarbling1,
   islandSurvey1,
 ];
 
