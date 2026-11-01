@@ -75,9 +75,9 @@ describe("resolving a stamp reference", () => {
     ]);
   });
 
-  // The same rule for how those stamps are cut and where their art sits.
+  // The same rule for how those stamps are cut and where their art sits: one seed per aspect, plus a full bleed.
   it("cuts procedural1 stamps the way it shipped", () => {
-    const cut = [1, 3].map((seed) => {
+    const cut = [1, 3, 5, 8].map((seed) => {
       const stamp = resolveStamp({ source: "procedural1", seed })!;
       const { width, height, outline, inner } = punchGeometry(stamp.punch);
       return [
@@ -105,6 +105,22 @@ describe("resolving a stamp reference", () => {
         [-0.3466666666666667, -0.47076893548947746],
         { width: 0.7215378709789549, height: 0.9415378709789549 },
         0,
+      ],
+      [
+        1,
+        0.78,
+        418,
+        [-0.46153846153846156, -0.36200109099271033],
+        { width: 0.9440021819854206, height: 0.7240021819854207 },
+        0.08628467258997007,
+      ],
+      [
+        0.88,
+        0.88,
+        544,
+        [-0.4106666666666667, -0.4239721348175655],
+        { width: 0.847944269635131, height: 0.847944269635131 },
+        0.06914546726347254,
       ],
     ]);
   });
