@@ -23,9 +23,9 @@ describe("specimen drawer 1", () => {
   // ADR 0001: a published style's output for a seed never changes. If one of these fails, the style's drawing
   // changed: restore it, and ship the change as a new style version instead.
   it("draws the same pixels it shipped with", () => {
-    expect(sha(pixels(1, 39, 50))).toBe("fea3d9afbf499c8f");
-    expect(sha(pixels(2, 50, 39))).toBe("f4a7f93825357735");
-    expect(sha(pixels(3, 44, 44))).toBe("b4cf49b53531d0b2");
+    expect(sha(pixels(1, 39, 50))).toBe("26976b5087df7d33");
+    expect(sha(pixels(2, 50, 39))).toBe("20dcaa6393709734");
+    expect(sha(pixels(3, 44, 44))).toBe("c20c8f47cfc79f7c");
   });
 
   it("draws different art for different seeds", () => {

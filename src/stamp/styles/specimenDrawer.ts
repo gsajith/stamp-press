@@ -660,8 +660,8 @@ function makeMoth(rand: () => number, inks: Inks): Moth {
   };
   // The bounds, from the outlines and the parts that stick out.
   for (const w of [f, h])
-    for (let i = 0; i <= 32; i++) {
-      const [x, y] = wingPoint(w, -1 + i / 16, 1);
+    for (let i = 0; i <= 128; i++) {
+      const [x, y] = wingPoint(w, -1 + i / 64, 1);
       grow(moth.box, x, y);
     }
   for (const c of [...antennae, ...feathers, ...(tail ? [tail] : [])])
@@ -963,11 +963,19 @@ function paintBeetle(b: Beetle, x: number, y: number, px: number) {
   under(b.dark, capsules(b.limbs, x, y, px));
 }
 
+// A moth's body: thorax and abdomen ellipses on the midline, centers and radii.
+const THORAX_Y = -0.07;
+const THORAX_RX = 0.075;
+const THORAX_RY = 0.13;
+const ABDOMEN_Y = 0.24;
+const ABDOMEN_RX = 0.05;
+const ABDOMEN_RY = 0.3;
+
 // Paints a moth at (x, y), x ≥ 0, under `out`, front to back.
 function paintMoth(m: Moth, x: number, y: number, px: number) {
   // Body: the head, a furred thorax and a ringed abdomen.
   under(m.body, ellipse(x, y, -0.21, 0.045, 0.04, px));
-  const thorax = ellipse(x, y, -0.07, 0.075, 0.13, px);
+  const thorax = ellipse(x, y, THORAX_Y, THORAX_RX, THORAX_RY, px);
   if (thorax > 0) {
     set(part, m.body);
     const f = sharp(0.008, px);
@@ -979,10 +987,10 @@ function paintMoth(m: Moth, x: number, y: number, px: number) {
       );
     under(part, thorax);
   }
-  const abdomen = ellipse(x, y, 0.24, 0.05, 0.3, px);
+  const abdomen = ellipse(x, y, ABDOMEN_Y, ABDOMEN_RX, ABDOMEN_RY, px);
   if (abdomen > 0) {
     set(part, m.body);
-    shadeBy(part, -0.12 * sharp(0.05, px) * tri((y - 0.24) / 0.05));
+    shadeBy(part, -0.12 * sharp(0.05, px) * tri((y - ABDOMEN_Y) / 0.05));
     under(part, abdomen);
   }
   if (keep === 0) return;
@@ -1013,8 +1021,18 @@ function paintMoth(m: Moth, x: number, y: number, px: number) {
 
 // A specimen's silhouette at (x, y), x ≥ 0, blurred by `soft`, for its shadow.
 function silhouette(s: Species, x: number, y: number, soft: number): number {
-  if (s.kind === "moth")
-    return Math.max(wingAt(s.fore, x, y, soft), wingAt(s.hind, x, y, soft));
+  if (s.kind === "moth") {
+    // A wing stops at its root, hidden in the body. Its shadow carries on inward from there, so it doesn't
+    // end in a hard edge.
+    const fx = Math.max(x, s.fore.x + 0.001);
+    const hx = Math.max(x, s.hind.x + 0.001);
+    return Math.max(
+      wingAt(s.fore, fx, y, soft),
+      wingAt(s.hind, hx, y, soft),
+      ellipse(x, y, THORAX_Y, THORAX_RX, THORAX_RY, soft),
+      ellipse(x, y, ABDOMEN_Y, ABDOMEN_RX, ABDOMEN_RY, soft),
+    );
+  }
   const p = s.pronotum;
   const e = s.elytra;
   if (y < p.y0 - soft || y > e.y1 + soft) return 0;
@@ -1025,11 +1043,50 @@ function silhouette(s: Species, x: number, y: number, soft: number): number {
   return edge(w - x, soft) * edge(y - p.y0, soft) * edge(e.y1 - y, soft);
 }
 
+// How much of a sample at (X, Y) a box covers, with X across a letter's cell in [0, 1) and Y in art units, and
+// `cx` and `py` a sample's size in each.
+const box = (
+  X: number,
+  Y: number,
+  x0: number,
+  x1: number,
+  y0: number,
+  y1: number,
+  cx: number,
+  py: number,
+) =>
+  Math.min(edge(X - x0, cx), edge(x1 - X, cx)) *
+  Math.min(edge(Y - y0, py), edge(y1 - Y, py));
+
+// One handwritten letter, picked by `h` in [0, 1): n, o, e, i or l, built from stems and bars over an
+// x-height band from -xh to xh, Y down. LETTER_INK is roughly their average cover of the band.
+const LETTER_INK = 0.38;
+function letterInk(
+  h: number,
+  X: number,
+  Y: number,
+  xh: number,
+  cx: number,
+  py: number,
+): number {
+  const bar = 0.35 * xh;
+  if (h > 0.7) {
+    // i, or l with an ascender.
+    const top = h > 0.85 ? -2.1 * xh : -xh;
+    return box(X, Y, 0.3, 0.5, top, xh, cx, py);
+  }
+  const left = box(X, Y, 0.05, 0.25, -xh, xh, cx, py);
+  const right = h < 0.5 ? box(X, Y, 0.6, 0.8, -xh, xh, cx, py) : 0;
+  const top = box(X, Y, 0.05, 0.8, -xh, -xh + bar, cx, py);
+  const bottom = h > 0.3 ? box(X, Y, 0.05, 0.8, xh - bar, xh, cx, py) : 0;
+  return Math.max(left, right, top, bottom);
+}
+
 // A grid of unit trays, `cols` by `rows`, and the one left empty, or -1.
 type Layout = { cols: number; rows: number; empty: number };
 
-// The grid for `count` specimens, with at most one tray to spare in a drawer of three or more, whose trays come closest to `shape`, the
-// width over height that fits a specimen and its label.
+// The grid for `count` specimens whose trays come closest to `shape`, the width over height that fits a
+// specimen and its label. A drawer of three or more may have one tray to spare.
 function layout(
   count: number,
   W: number,
@@ -1171,29 +1228,42 @@ function draw(
     const onLabel = edge(Math.min(x - L.x0, L.x1 - x, y - L.y0, L.y1 - y), px);
     if (onLabel > 0) {
       over(tray, paper, onLabel);
-      // Two lines of handwriting: words of letters, some with ascenders.
+      // Two lines of slanted handwriting: letters in cells 4.5% of the label wide, a fifth of them spaces.
       const lw = (L.x1 - L.x0) / 2;
       const lh = (L.y1 - L.y0) / 2;
-      const u = (x - L.x0) / lw - 1;
       const v = (y - L.y0) / lh - 1;
       const row = v < 0 ? 0 : 1;
-      const at = row === 0 ? -0.38 : 0.32;
-      const end = row === 0 ? 0.75 : -0.2 + 0.7 * hash2(t.salt, 9, 3);
-      if (u > -0.82 && u < end) {
-        const word = Math.floor((u + 1) / 0.13);
-        const fw = sharp(0.13 * lw, px);
-        const inWord =
-          0.75 + fw * ((hash2(word, row, t.salt) < 0.75 ? 1 : 0) - 0.75);
-        const letter = (u + 1) / 0.045;
-        const tall = hash2(Math.floor(letter), row, t.salt + 1) < 0.25;
-        const short = line((v - at) * lh, 0.16 * lh, px);
-        const high = line((v - at + 0.13) * lh, 0.29 * lh, px);
-        // Seen whole, a letter is a stroke 45% of its cell, a quarter of them tall.
-        const average = 0.45 * (0.75 * short + 0.25 * high);
-        const fs = sharp(0.045 * lw, px);
-        const stroke =
-          letter - Math.floor(letter) < 0.45 ? (tall ? high : short) : 0;
-        over(tray, dark, 0.85 * inWord * (average + fs * (stroke - average)));
+      const xh = 0.16 * lh;
+      const Y = (v - (row === 0 ? -0.38 : 0.32)) * lh;
+      const cell = 0.045 * lw;
+      const slanted = (x - L.x0 + 0.3 * Y) / cell;
+      const letter = Math.floor(slanted);
+      // The first row runs most of the label, the second stops short.
+      const last = row === 0 ? 38 : 18 + Math.floor(15 * hash2(t.salt, 9, 3));
+      if (letter >= 4 && letter < last) {
+        // Seen whole, letters average out to LETTER_INK of the x-height band, plus thin ascenders above it.
+        const asc = 0.55 * xh;
+        const average =
+          0.8 *
+          (LETTER_INK * line(Y, xh, px) + 0.03 * line(Y + xh + asc, asc, px));
+        const fs = sharp(cell, px);
+        let ink = average;
+        if (fs > 0) {
+          const h = hash2(letter, row, t.salt);
+          const glyph =
+            h < 0.2
+              ? 0
+              : letterInk(
+                  (h - 0.2) / 0.8,
+                  slanted - letter,
+                  Y,
+                  xh,
+                  px / cell,
+                  px,
+                );
+          ink += fs * (glyph - average);
+        }
+        over(tray, dark, 0.85 * ink);
       }
     }
     if (t.S === 0) {
@@ -1210,7 +1280,15 @@ function draw(
     const ly = (y - t.cy) / S;
     const lp = px / S;
     const b = s.box;
-    if (lx < -b.x1 || lx > b.x1 + 0.45 || ly < b.y0 || ly > b.y1 + 0.6) return;
+    // The box is sampled, so pad it. Shadows reach further right and down.
+    const pad = 0.05;
+    if (
+      lx < -b.x1 - pad ||
+      lx > b.x1 + 0.45 ||
+      ly < b.y0 - pad ||
+      ly > b.y1 + 0.6
+    )
+      return;
 
     // The specimen, then under it, where it doesn't hide them, its shadow on the foam and the pin's.
     out.fill(0);
