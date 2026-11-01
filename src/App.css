@@ -1,0 +1,59 @@
+html,
+body,
+#root,
+main {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  overflow: hidden;
+  background: #f1ede6;
+  font-family:
+    ui-rounded,
+    "SF Pro Rounded",
+    system-ui,
+    -apple-system,
+    "Segoe UI",
+    sans-serif;
+  -webkit-tap-highlight-color: transparent;
+}
+
+main {
+  position: relative;
+}
+
+.press {
+  position: absolute;
+  left: 50%;
+  bottom: max(28px, env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  padding: 14px 26px;
+  border: 0;
+  border-radius: 999px;
+  background: #23201c;
+  color: #f8f4ec;
+  font: inherit;
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  box-shadow: 0 6px 18px rgb(35 32 28 / 0.22);
+  cursor: pointer;
+  touch-action: manipulation;
+  transition:
+    transform 120ms ease,
+    box-shadow 120ms ease;
+}
+
+.press:hover {
+  box-shadow: 0 8px 22px rgb(35 32 28 / 0.28);
+}
+
+.press:active {
+  transform: translateX(-50%) scale(0.96);
+}
+
+.press:focus-visible {
+  outline: 3px solid #23201c;
+  outline-offset: 3px;
+}
