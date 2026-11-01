@@ -4,7 +4,7 @@ import {
   type RapierRigidBody,
   RigidBody,
 } from "@react-three/rapier";
-import { memo, useEffect, useMemo, useRef } from "react";
+import { memo, useEffect, useMemo, useRef, useState } from "react";
 import type { Group } from "three";
 import type { DeskStamp } from "../desk/desk";
 import { punchGeometry, resolveStamp, type Stamp } from "../stamp";
@@ -14,12 +14,16 @@ export const DROP_HEIGHT = 4;
 // The height over which a falling stamp's flutter dies away, so it lands flat.
 const FLUTTER_HEIGHT = 1.2;
 const TILT = 0.5;
+// After landing, a stamp settles for at most this long, or until it has nearly stopped, then it's fixed in
+// place. Thin bodies resting on each other otherwise keep trading contact impulses and bounce.
+const SETTLE_TIME = 0.6;
+const REST_SPEED = 0.05;
 const SWAY = 0.35;
 
 // One stamp falling like light paper: a thin rigid body with heavy drag that can only turn about the
 // vertical, so it always lands art up. The flutter is scripted on top: the art tilts and the body sways side
 // to side, both fading out as it nears the desk and ending when it first touches down, which it reports with
-// `onLand`. Once settled, Rapier puts the body to sleep. A stamp that isn't `shown` stays on the desk as a body
+// `onLand`. Shortly after landing the body is fixed in place, so a pile of thin stamps can't jostle. A stamp that isn't `shown` stays on the desk as a body
 // alone, its mesh and texture released until it comes back into range.
 export const StampBody = memo(function StampBody({
   entry: { id, ref, drop },
@@ -39,11 +43,22 @@ export const StampBody = memo(function StampBody({
   const [p1, p2, w1, w2] = drop.flutter;
   // Set on the first contact, with the desk or with a stamp already lying there. From then on physics has it.
   const landed = useRef(false);
+  const settling = useRef(0);
+  const [fixed, setFixed] = useState(false);
   useFrame(({ clock }, dt) => {
     const b = body.current;
     const a = art.current;
     if (!b || !a) return;
     if (landed.current) {
+      if (!fixed) {
+        settling.current += dt;
+        const v = b.linvel();
+        if (
+          settling.current > SETTLE_TIME ||
+          Math.hypot(v.x, v.y, v.z) < REST_SPEED
+        )
+          setFixed(true);
+      }
       // Ease the last of the tilt out rather than snapping flat.
       if (a.rotation.x === 0 && a.rotation.z === 0) return;
       const k = Math.exp(-12 * dt);
@@ -73,6 +88,7 @@ export const StampBody = memo(function StampBody({
   return (
     <RigidBody
       ref={body}
+      type={fixed ? "fixed" : "dynamic"}
       position={[drop.spot[0], DROP_HEIGHT, drop.spot[1]]}
       rotation={[0, drop.yaw, 0]}
       colliders={false}

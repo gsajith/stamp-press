@@ -3,7 +3,8 @@ import { useMemo } from "react";
 import { CanvasTexture, RepeatWrapping, SRGBColorSpace } from "three";
 import type { Spot } from "../desk/desk";
 
-export const DESK_COLOR = "#f1ede6";
+// A neutral off-white, with no warm cast, so stamps print in their own colors.
+export const DESK_COLOR = "#efefef";
 // The paper you can see, which travels with the camera. Fog hides its edge well inside this.
 const SIZE = 200;
 // The desk has no edge to fall off: the trail can wander over a hundred units in a long session.
