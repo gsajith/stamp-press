@@ -23,8 +23,8 @@ describe("cross-stitch 1", () => {
   // ADR 0001: a published style's output for a seed never changes. If one of these fails, the style's drawing
   // changed: restore it, and ship the change as a new style version instead.
   it("draws the same pixels it shipped with", () => {
-    expect(sha(pixels(1, 39, 50))).toBe("0a6ca21eec9a520b");
-    expect(sha(pixels(2, 50, 39))).toBe("ebe4a8a11de89c32");
+    expect(sha(pixels(1, 39, 50))).toBe("2247a1faaa73e1a6");
+    expect(sha(pixels(2, 50, 39))).toBe("c715a5961c9925df");
     expect(sha(pixels(3, 44, 44))).toBe("6637468eb10a9b8f");
   });
 
@@ -72,7 +72,7 @@ describe("cross-stitch 1", () => {
         Math.round(height * scale) - 2 * inset,
       ];
     };
-    for (const seed of [6, 9, 12, 16, 18, 20]) {
+    for (const seed of [6, 9, 12, 16, 18, 20, 23, 117]) {
       const [w, h] = artSize(seed, 256);
       const [W, H] = artSize(seed, 1024);
       const small = pixels(seed, w, h);

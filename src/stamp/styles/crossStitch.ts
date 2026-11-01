@@ -568,10 +568,11 @@ function draw(
 
   // Each stitch's thread, and how it catches the light, a little different from its neighbors'.
   const tones = new Float64Array(gridCols * gridRows * 3);
+  // Hashed by design coordinates: the padding around the design varies with drawFace's rounding.
   for (let k = 0; k < gridCols * gridRows; k++)
     if (grid[k] >= 0) {
-      const tone =
-        0.95 + 0.1 * hash2(k % gridCols, Math.floor(k / gridCols), salt);
+      const [x, y] = [(k % gridCols) - ex, Math.floor(k / gridCols) - ey];
+      const tone = 0.95 + 0.1 * hash2(x, y, salt);
       for (let c = 0; c < 3; c++) tones[k * 3 + c] = threads[grid[k]][c] * tone;
     }
 
