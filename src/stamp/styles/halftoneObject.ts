@@ -96,11 +96,16 @@ function ball(rand: () => number, halfH: number): Subject {
 
 // A planet with a tilted ring that passes behind it at the top and in front of it at the bottom.
 function planet(rand: () => number): Subject {
-  const r = 0.2 + 0.07 * rand();
+  const size = 0.2 + 0.07 * rand();
   const [cx, cy] = [(rand() - 0.5) * 0.12, (rand() - 0.5) * 0.12];
   const l = light(rand);
   const [c, s] = pick(TILTS, rand);
-  const [inner, outer] = [r * (1.3 + 0.1 * rand()), r * (1.75 + 0.2 * rand())];
+  const [inside, outside] = [1.3 + 0.1 * rand(), 1.75 + 0.2 * rand()];
+  // The ring is widest across, so shrink the planet until the ring's half width, sqrt((c a)² + (s b)²) for a
+  // tilted ellipse, stays inside the art's short side with a little paper to spare.
+  const across = outside * Math.sqrt(c * c + RING_FLAT * RING_FLAT * s * s);
+  const r = Math.min(size, (0.46 - Math.abs(cx)) / across);
+  const [inner, outer] = [r * inside, r * outside];
   // A point in the ring's frame: `q` is its elliptical radius, `g` how fast q changes per art unit there.
   const ring = (x: number, y: number) => {
     const [dx, dy] = [x - cx, y - cy];
@@ -183,7 +188,9 @@ function draw(
         tint,
         tintStrength * subject.cover(ax - slip[0], ay - slip[1], px),
       );
-      // The screen position, in cells. A dot is at most 0.72 cells wide, so only the four nearest can reach.
+      // The screen position, in cells. A dot's radius is at most 0.72 cells, plus half a pixel of soft edge, so
+      // once a cell is about 2 px or more only the four nearest dots can reach. Smaller draws drop a sliver of
+      // ink at the far edge of the darkest dots.
       const gu = (ax * c + ay * s) / cell;
       const gv = (ay * c - ax * s) / cell;
       const [i0, j0] = [Math.floor(gu), Math.floor(gv)];
