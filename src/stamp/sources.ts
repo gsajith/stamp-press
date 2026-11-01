@@ -2,10 +2,15 @@ import { PALETTES_1, type Palette } from "./palettes";
 import { pick, randomSeed, subSeed } from "./random";
 import type { StampRef } from "./ref";
 import { bauhausGrid1 } from "./styles/bauhausGrid";
+import { botanicalLSystem1 } from "./styles/botanicalLSystem";
+import { guillocheRosette1 } from "./styles/guillocheRosette";
+import { halftoneObject1 } from "./styles/halftoneObject";
 import { landscapeSilhouette1 } from "./styles/landscapeSilhouette";
 import { linocut1 } from "./styles/linocut";
+import { midCentury1 } from "./styles/midCentury";
 import { pixelSprite1 } from "./styles/pixelSprite";
 import { risoOverprint1 } from "./styles/risoOverprint";
+import { truchetTiles1 } from "./styles/truchetTiles";
 
 // A style: one procedural look, drawn by code from a seed and a palette. It draws in resolution-independent
 // units, so the same seed at 256 px and 2048 px is the same picture. `id` carries a version: per ADR 0001 a
@@ -51,6 +56,11 @@ export const STYLES: readonly Style[] = [
   bauhausGrid1,
   pixelSprite1,
   risoOverprint1,
+  truchetTiles1,
+  botanicalLSystem1,
+  guillocheRosette1,
+  halftoneObject1,
+  midCentury1,
   linocut1,
 ];
 
