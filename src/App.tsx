@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useReducer, useRef } from "react";
 import { deskReducer, EMPTY_DESK } from "./desk/desk";
+import { visibleArea } from "./scene/camera";
 import Scene from "./scene/Scene";
 import { pressStampRef } from "./stamp";
 import "./App.css";
@@ -10,9 +11,16 @@ export default function App() {
     deskReducer(empty, { type: "load", ref: pressStampRef() }),
   );
   const button = useRef<HTMLButtonElement>(null);
-  // The desk refuses a press while too many stamps are still falling.
+  // The desk refuses a press while too many stamps are still falling. The scene fills the window, so the
+  // window's shape sets how much desk a burst can spread over.
   const press = useCallback(
-    () => dispatch({ type: "press", ref: pressStampRef() }),
+    () =>
+      dispatch({
+        type: "press",
+        ref: pressStampRef(),
+        at: performance.now(),
+        area: visibleArea(innerWidth / innerHeight),
+      }),
     [],
   );
   const land = useCallback((id: number) => dispatch({ type: "land", id }), []);

@@ -2,13 +2,12 @@ import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { Physics } from "@react-three/rapier";
 import { type RefObject, Suspense, useRef } from "react";
 import type { DirectionalLight } from "three";
-import { type Desk as DeskState, focusOf, isNearFocus } from "../desk/desk";
+import { type Desk as DeskState, isNearFocus } from "../desk/desk";
+import { backoff, FOV, VIEW } from "./camera";
 import { Desk, DESK_COLOR } from "./Desk";
 import { StampBody } from "./StampBody";
 
-// Where the camera looks from, relative to the spot it looks at: tilted down and round to one side.
-const VIEW = [0.6, 3.3, 2.4] as const;
-// Where the sun shines from, relative to the same spot. It travels with the camera, so its shadows do too.
+// Where the sun shines from, relative to the spot the camera looks at. It travels with the camera, so its shadows do too.
 const SUN = [-2.5, 6, 1.5] as const;
 // Roughly how long the camera's glide to a new drop takes to cover most of the way, in seconds.
 const SMOOTH_TIME = 0.35;
@@ -24,8 +23,8 @@ function damp(x: number, v: number, to: number, dt: number): [number, number] {
   return [to + (change + pull) * decay, (v - omega * pull) * decay];
 }
 
-// Glides the camera to look at `focus`, the newest drop, and backs it off on narrow screens so a stamp keeps
-// its margins on a phone. The sun follows, so stamps far from the start still cast shadows.
+// Glides the camera to look at `focus`, the desk's camera center, backed off on narrow screens. The sun
+// follows, so stamps far from the start still cast shadows.
 function CameraRig({
   focus,
   sun,
@@ -39,7 +38,7 @@ function CameraRig({
     const l = look.current;
     [l.x, l.vx] = damp(l.x, l.vx, focus[0], dt);
     [l.z, l.vz] = damp(l.z, l.vz, focus[1], dt);
-    const k = aspect < 1 ? Math.min(2, 1 / aspect) ** 0.8 : 1;
+    const k = backoff(aspect);
     camera.position.set(l.x + VIEW[0] * k, VIEW[1] * k, l.z + VIEW[2] * k);
     camera.lookAt(l.x, 0, l.z);
     const light = sun.current;
@@ -59,14 +58,14 @@ export default function Scene({
   onLand: (id: number) => void;
 }) {
   const sun = useRef<DirectionalLight>(null);
-  const focus = focusOf(desk);
+  const { focus } = desk;
   return (
     <Canvas
       shadows
       // Untoned, so the paper stays paper white and the inks print as drawn.
       flat
       dpr={[1, 2]}
-      camera={{ fov: 35, position: [...VIEW], near: 0.1, far: 60 }}
+      camera={{ fov: FOV, position: [...VIEW], near: 0.1, far: 60 }}
       aria-hidden
     >
       <color attach="background" args={[DESK_COLOR]} />

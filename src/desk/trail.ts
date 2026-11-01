@@ -1,4 +1,4 @@
-import type { Spot } from "./desk";
+import type { Area, Spot } from "./desk";
 
 // Ported from the blind box. Each drop lands a step away from the last stamp, toward open desk, so stamps
 // leave a wandering trail. The step is under a stamp's length (its long side is 1), so neighbors often
@@ -29,6 +29,36 @@ export function chooseDropSpot(trail: Spot[], rand: () => number): Spot {
       room = Math.min(room, Math.hypot(spot[0] - x, spot[1] - z));
     const score = room / step + WANDER * rand();
     if (score > bestScore) [best, bestScore] = [spot, score];
+  }
+  return best;
+}
+
+// How many random spots a burst drop weighs up. More spreads a burst more evenly.
+const CANDIDATES = 16;
+
+// A spot for a drop in a burst: inside `area` around the camera's `center`, as far as it can find from the
+// stamps already at `spots`, so a burst covers the screen rather than stacking up.
+export function chooseBurstSpot(
+  spots: Spot[],
+  center: Spot,
+  { far, near }: Area,
+  rand: () => number,
+): Spot {
+  const lerp = (a: Spot, b: Spot, t: number): Spot => [
+    a[0] + (b[0] - a[0]) * t,
+    a[1] + (b[1] - a[1]) * t,
+  ];
+  let best: Spot = center;
+  let bestRoom = -Infinity;
+  for (let i = 0; i < CANDIDATES; i++) {
+    // Across the patch, then from its far edge to its near one.
+    const u = rand();
+    const [x, z] = lerp(lerp(...far, u), lerp(...near, u), rand());
+    const spot: Spot = [center[0] + x, center[1] + z];
+    let room = Infinity;
+    for (const [sx, sz] of spots)
+      room = Math.min(room, Math.hypot(spot[0] - sx, spot[1] - sz));
+    if (room > bestRoom) [best, bestRoom] = [spot, room];
   }
   return best;
 }
