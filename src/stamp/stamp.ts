@@ -46,6 +46,12 @@ export function drawArt(
   art.style.draw(ctx, width, height, art.seed, palette);
 }
 
+// How far the art sits inside the stamp's bounds on every side, in stamp units. A full-bleed stamp's art runs
+// into the teeth. Otherwise it sits a margin inside the notches. Frozen with every published source.
+export function artInset({ punch, margin }: Stamp): number {
+  return margin > 0 ? punch.notch + margin : 0;
+}
+
 // Draws a stamp's whole face at `scale` pixels per stamp unit: paper, the art inside its margin, and the punch
 // cut out of it, with everything outside the outline left transparent. `canvas` makes a scratch canvas.
 export function drawFace(
@@ -54,15 +60,11 @@ export function drawFace(
   scale: number,
   canvas: (width: number, height: number) => CanvasRenderingContext2D,
 ) {
-  const { width, height, outline, inner } = punchGeometry(stamp.punch);
+  const { width, height, outline } = punchGeometry(stamp.punch);
   const [w, h] = [Math.round(width * scale), Math.round(height * scale)];
   ctx.fillStyle = stamp.palette.paper;
   ctx.fillRect(0, 0, w, h);
-  // A full-bleed stamp's art runs into the teeth. Otherwise it sits a margin inside the notches.
-  const inset =
-    stamp.margin > 0
-      ? Math.round(((width - inner.width) / 2 + stamp.margin) * scale)
-      : 0;
+  const inset = Math.round(artInset(stamp) * scale);
   const [aw, ah] = [w - 2 * inset, h - 2 * inset];
   const art = canvas(aw, ah);
   drawArt(art, stamp, aw, ah);

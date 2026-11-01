@@ -9,6 +9,8 @@ export type Punch = {
   notch: number;
 };
 
+// The sizes and the notch layout in punchGeometry decide how every published stamp is cut, so ADR 0001 freezes
+// them. A different cut ships with a new source version.
 export const ASPECTS: readonly Aspect[] = ["portrait", "landscape", "square"];
 const SIZE: Record<Aspect, [number, number]> = {
   portrait: [0.78, 1],

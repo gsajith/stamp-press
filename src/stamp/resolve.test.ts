@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { CURRENT_SOURCE, proceduralSource, resolveStamp } from ".";
+import {
+  artInset,
+  CURRENT_SOURCE,
+  proceduralSource,
+  punchGeometry,
+  resolveStamp,
+} from ".";
 
 const seeds = Array.from({ length: 300 }, (_, i) => i * 7919 + 1);
 const stamps = seeds.map(
@@ -64,6 +70,40 @@ describe("resolving a stamp reference", () => {
           pitch: 0.08499600142706186,
           notch: 0.02923106451052254,
         },
+        0,
+      ],
+    ]);
+  });
+
+  // The same rule for how those stamps are cut and where their art sits.
+  it("cuts procedural1 stamps the way it shipped", () => {
+    const cut = [1, 3].map((seed) => {
+      const stamp = resolveStamp({ source: "procedural1", seed })!;
+      const { width, height, outline, inner } = punchGeometry(stamp.punch);
+      return [
+        width,
+        height,
+        outline.length,
+        outline[5],
+        inner,
+        artInset(stamp),
+      ];
+    });
+    expect(cut).toEqual([
+      [
+        0.78,
+        1,
+        454,
+        [-0.35454545454545455, -0.4794731237499806],
+        { width: 0.7389462474999612, height: 0.9589462474999612 },
+        0.09371649481190195,
+      ],
+      [
+        0.78,
+        1,
+        382,
+        [-0.3466666666666667, -0.47076893548947746],
+        { width: 0.7215378709789549, height: 0.9415378709789549 },
         0,
       ],
     ]);
