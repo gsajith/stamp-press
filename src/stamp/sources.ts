@@ -13,6 +13,7 @@ import { linocut1 } from "./styles/linocut";
 import { midCentury1 } from "./styles/midCentury";
 import { paperDiorama1 } from "./styles/paperDiorama";
 import { paperMarbling1 } from "./styles/paperMarbling";
+import { philatelicError1 } from "./styles/philatelicError";
 import { pixelSprite1 } from "./styles/pixelSprite";
 import { risoOverprint1 } from "./styles/risoOverprint";
 import { seashell1 } from "./styles/seashell";
@@ -77,6 +78,7 @@ export const STYLES: readonly Style[] = [
   girih1,
   crossStitch1,
   islandSurvey1,
+  philatelicError1,
   seashell1,
 ];
 
