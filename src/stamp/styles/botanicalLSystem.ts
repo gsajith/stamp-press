@@ -280,15 +280,16 @@ function draw(
     );
   }
 
-  // Each flower over the ones before: a ring of petals and a heart.
+  // Each flower over the ones before, in a slightly different tone like the leaves: a ring of petals and a heart.
   for (const { at, spin } of flowers) {
+    const ink = mix(flowerInk, rand() < 0.5 ? dark : paperInk, 0.15 * rand());
     const c = toPx(at);
     const R = flowerRadius * scale;
     for (let k = 0; k < petals; k++) {
       const [ox, oy] = cosSin(spin + (k * 2 * Math.PI) / petals);
       const petal: Pt = [c[0] + ox * 0.55 * R, c[1] + oy * 0.55 * R];
       paint(width, height, petal, petal, 0.45 * R, (i, _, d) =>
-        over(i, flowerInk, coverage(0.45 * R, d)),
+        over(i, ink, coverage(0.45 * R, d)),
       );
     }
     paint(width, height, c, c, 0.3 * R, (i, _, d) =>

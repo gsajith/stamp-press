@@ -25,7 +25,7 @@ describe("botanical L-system 1", () => {
   it("draws the same pixels it shipped with", () => {
     expect(sha(pixels(1, 39, 50))).toBe("d1d060e41e5a9a90");
     expect(sha(pixels(2, 50, 39))).toBe("f06333ff73e1ca1b");
-    expect(sha(pixels(3, 44, 44))).toBe("25db368c88d87b2c");
+    expect(sha(pixels(3, 44, 44))).toBe("9f88a50787a7547f");
   });
 
   it("draws different art for different seeds", () => {
