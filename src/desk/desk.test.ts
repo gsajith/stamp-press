@@ -240,9 +240,9 @@ describe("desk", () => {
 
   it("stops rendering stamps far from the camera's center, and keeps the ones around it", () => {
     const desk = run([load, land(0), ...pressAndLand(300)]);
-    const near = desk.stamps.filter((s) => dist(s.drop.spot, desk.focus) < 4);
-    const far = desk.stamps.filter((s) => dist(s.drop.spot, desk.focus) > 12);
-    // The camera frames a few desk units around its center, on a phone or a wide screen.
+    const near = desk.stamps.filter((s) => dist(s.drop.spot, desk.focus) < 7);
+    const far = desk.stamps.filter((s) => dist(s.drop.spot, desk.focus) > 20);
+    // The camera frames several desk units around its center, on a phone or a wide screen.
     expect(near.length).toBeGreaterThan(5);
     expect(far.length).toBeGreaterThan(100);
     for (const s of near) expect(isNearFocus(desk, s)).toBe(true);

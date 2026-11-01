@@ -17,14 +17,14 @@ import {
 import { type Camera, type Group, type Texture, Vector3 } from "three";
 import type { DeskStamp } from "../desk/desk";
 import { punchGeometry, resolveStamp, type Stamp } from "../stamp";
-import { backoff } from "./camera";
+import { backoff, DISTANCE } from "./camera";
 import { aimFling, DRAG, flightAt, type Vec3 } from "./fling";
 import type { Placed } from "./placed";
 import { deskTexture, stampGeometry, THICKNESS } from "./stampMesh";
 
 // How far in front of the camera a stamp leaves the press, along the line of sight through the button. A
 // phone's camera backs off further, and so does the launch, so a stamp leaves at the same size on screen.
-const LAUNCH_DISTANCE = 2;
+const LAUNCH_DISTANCE = 2 * DISTANCE;
 // Below this height, on the way down, physics takes over the flight so the stamp can land on the pile.
 const HANDOFF = 0.3;
 // With reduced motion a stamp skips the fling and drops onto its spot from this height.
@@ -41,6 +41,8 @@ const SETTLE_TIME = 0.6;
 const REST_SPEED = 0.05;
 // How far the flutter sways a stamp side to side.
 const SWAY = 0.12;
+// How far ahead a falling stamp looks for contacts, in desk units, so it lands on the surface, not in it.
+const SOFT_CCD = 0.15;
 
 // A stamp's flight from the press: its launch, velocity, how long it lasts and how long it has flown, in
 // seconds, and where the script put it last frame.
@@ -160,6 +162,12 @@ export const StampBody = memo(function StampBody({
         // anything. Without mass, contacts can't stop it and it sinks through the desk.
         c.setEnabled(true);
         b.recomputeMassPropertiesFromColliders();
+        // CCD only from here. On the script it clamps a stamp's moves against the stamps bunched at the press,
+        // so a burst sticks there and then leaps out. Plain CCD still lets a stamp landing at full speed sink
+        // below the desk for a few frames, hiding its face: soft CCD sees the contact coming and stops it on
+        // the surface.
+        b.enableCcd(true);
+        b.setSoftCcdPrediction(SOFT_CCD);
         b.setBodyType(rapier.RigidBodyType.Dynamic, true);
         b.setTranslation(
           { x: at[0], y: Math.max(at[1], 0.05), z: at[2] },
@@ -201,7 +209,6 @@ export const StampBody = memo(function StampBody({
       linearDamping={DRAG}
       angularDamping={1.5}
       gravityScale={1.04}
-      ccd
       onCollisionEnter={() => {
         if (phase.current !== "falling") return;
         phase.current = "landed";
