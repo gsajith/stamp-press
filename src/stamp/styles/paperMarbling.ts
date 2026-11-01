@@ -31,12 +31,9 @@ const clamp01 = (x: number) => (x < 0 ? 0 : x > 1 ? 1 : x);
 
 const TAU = 6.283185307179586;
 
-// Sine and cosine of `x`, written to `sine` and `cosine`, from one Taylor polynomial, which is the same in every
-// engine, unlike Math.sin. Sine is within 1e-7. Cosine comes from sqrt(1 - sine²), so it strays up to 4e-4 near
-// a quarter turn, plenty for the drift's direction, its one use.
-let sine = 0;
-let cosine = 0;
-function sincos(x: number) {
+// Sine and cosine of `x` from Taylor polynomials, which are the same in every engine, unlike Math.sin and
+// Math.cos. Within 1e-9 of them.
+export function sinCos(x: number): [number, number] {
   let y = x - TAU * Math.round(x / TAU);
   let sign = 1;
   if (y > TAU / 4) {
@@ -46,14 +43,15 @@ function sincos(x: number) {
     y = -TAU / 2 - y;
     sign = -1;
   }
+  // Now |y| <= a quarter turn, and sin(x) = sin(y), cos(x) = sign * cos(y).
   const y2 = y * y;
-  sine =
-    y *
-    (1 -
-      (y2 / 6) *
-        (1 - (y2 / 20) * (1 - (y2 / 42) * (1 - (y2 / 72) * (1 - y2 / 110)))));
-  const s2 = sine * sine;
-  cosine = sign * Math.sqrt(s2 < 1 ? 1 - s2 : 0);
+  let sin = 1;
+  let cos = 1;
+  for (let k = 14; k > 0; k -= 2) {
+    sin = 1 - (y2 / (k * (k + 1))) * sin;
+    cos = 1 - (y2 / (k * (k - 1))) * cos;
+  }
+  return [y * sin, sign * cos];
 }
 
 // A drop of ink: a disc of radius `r` whose outer `r - core` is its pale rim. `thinned` is how far its ink
@@ -122,8 +120,8 @@ function slide(s: Stroke, v: number) {
 
 // A turn of `angle` turns, as a unit vector.
 function heading(angle: number): [number, number] {
-  sincos(TAU * angle);
-  return [cosine, sine];
+  const [sin, cos] = sinCos(TAU * angle);
+  return [cos, sin];
 }
 
 type Pattern = "stone" | "gelgit" | "nonpareil" | "chevron" | "bouquet";

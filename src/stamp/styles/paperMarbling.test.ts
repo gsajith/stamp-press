@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import { createCanvas } from "@napi-rs/canvas";
 import { describe, expect, it } from "vitest";
 import { drawArt, resolveStamp, STYLES } from "..";
+import { sinCos } from "./paperMarbling";
 
 // Draws a stamp's art in Node and returns its RGBA pixels.
 function pixels(seed: number, width: number, height: number) {
@@ -62,5 +63,21 @@ describe("paper marbling 1", () => {
       // Mean difference per channel, out of 255.
       expect(total / (w * h * 3)).toBeLessThan(bound);
     }
+  });
+});
+
+describe("sinCos", () => {
+  it("matches Math.sin and Math.cos to within 1e-9", () => {
+    let worst = 0;
+    for (let i = 0; i <= 20000; i++) {
+      const x = -20 + (40 * i) / 20000;
+      const [sin, cos] = sinCos(x);
+      worst = Math.max(
+        worst,
+        Math.abs(sin - Math.sin(x)),
+        Math.abs(cos - Math.cos(x)),
+      );
+    }
+    expect(worst).toBeLessThan(1e-9);
   });
 });
