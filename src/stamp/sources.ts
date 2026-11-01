@@ -6,6 +6,7 @@ import { botanicalLSystem1 } from "./styles/botanicalLSystem";
 import { guillocheRosette1 } from "./styles/guillocheRosette";
 import { halftoneObject1 } from "./styles/halftoneObject";
 import { landscapeSilhouette1 } from "./styles/landscapeSilhouette";
+import { midCentury1 } from "./styles/midCentury";
 import { pixelSprite1 } from "./styles/pixelSprite";
 import { risoOverprint1 } from "./styles/risoOverprint";
 import { truchetTiles1 } from "./styles/truchetTiles";
@@ -58,6 +59,7 @@ export const STYLES: readonly Style[] = [
   botanicalLSystem1,
   guillocheRosette1,
   halftoneObject1,
+  midCentury1,
 ];
 
 // Style versions no longer pressed. They stay registered so their share links keep working: when a new
