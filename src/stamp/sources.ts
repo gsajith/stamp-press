@@ -12,6 +12,7 @@ import { paperDiorama1 } from "./styles/paperDiorama";
 import { pixelSprite1 } from "./styles/pixelSprite";
 import { risoOverprint1 } from "./styles/risoOverprint";
 import { skyChart1 } from "./styles/skyChart";
+import { steelEngraving1 } from "./styles/steelEngraving";
 import { truchetTiles1 } from "./styles/truchetTiles";
 
 // A style: one procedural look, drawn by code from a seed and a palette. It draws in resolution-independent
@@ -65,6 +66,7 @@ export const STYLES: readonly Style[] = [
   midCentury1,
   linocut1,
   skyChart1,
+  steelEngraving1,
   paperDiorama1,
 ];
 
