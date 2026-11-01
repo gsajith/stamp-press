@@ -90,7 +90,12 @@ export default function Scene({
         // Untoned, so the paper stays paper white and the inks print as drawn.
         flat
         dpr={[1, 2]}
-        camera={{ fov: FOV, position: [...VIEW], near: 0.1, far: 60 * DISTANCE }}
+        camera={{
+          fov: FOV,
+          position: [...VIEW],
+          near: 0.1,
+          far: 60 * DISTANCE,
+        }}
         aria-hidden
       >
         <color attach="background" args={[DESK_COLOR]} />
