@@ -3,6 +3,7 @@ import { pick, randomSeed, subSeed } from "./random";
 import type { StampRef } from "./ref";
 import { bauhausGrid1 } from "./styles/bauhausGrid";
 import { botanicalLSystem1 } from "./styles/botanicalLSystem";
+import { escherTessellation1 } from "./styles/escherTessellation";
 import { guillocheRosette1 } from "./styles/guillocheRosette";
 import { halftoneObject1 } from "./styles/halftoneObject";
 import { landscapeSilhouette1 } from "./styles/landscapeSilhouette";
@@ -62,6 +63,7 @@ export const STYLES: readonly Style[] = [
   halftoneObject1,
   midCentury1,
   linocut1,
+  escherTessellation1,
 ];
 
 // Style versions no longer pressed. They stay registered so their share links keep working: when a new
