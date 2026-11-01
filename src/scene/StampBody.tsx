@@ -92,7 +92,7 @@ export const StampBody = memo(function StampBody({
       enabledRotations={[false, true, false]}
       linearDamping={2.6}
       angularDamping={1.5}
-      gravityScale={0.8}
+      gravityScale={1.04}
       ccd
       onCollisionEnter={() => {
         if (landed.current) return;
