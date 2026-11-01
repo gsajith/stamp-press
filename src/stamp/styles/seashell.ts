@@ -394,6 +394,8 @@ function spire(rand: () => number, form: SpireForm, look: Look): Shell {
     }
   }
   const size = Math.max(right - left, bottom);
+  // The coarse slices can miss the outline's widest point by a hair, so painting reaches a little past them.
+  const slack = 0.01 * size;
 
   // The shell's color at depth y and azimuth a, `px` being a sample's size and `outline` how much of the
   // outline covers it.
@@ -457,10 +459,10 @@ function spire(rand: () => number, form: SpireForm, look: Look): Shell {
     bounds: [left, 0, right, bottom],
     paint(img, ox, oy, k, edge) {
       const px = 1 / k;
-      const c0 = Math.max(0, Math.floor(ox + left * k) - 2);
-      const c1 = Math.min(img.width, Math.ceil(ox + right * k) + 2);
+      const c0 = Math.max(0, Math.floor(ox + (left - slack) * k) - 2);
+      const c1 = Math.min(img.width, Math.ceil(ox + (right + slack) * k) + 2);
       const r0 = Math.max(0, Math.floor(oy) - 2);
-      const r1 = Math.min(img.height, Math.ceil(oy + bottom * k) + 2);
+      const r1 = Math.min(img.height, Math.ceil(oy + (bottom + slack) * k) + 2);
       const cols = c1 - c0;
       const rows = r1 - r0;
       if (cols <= 0 || rows <= 0) return;
@@ -609,7 +611,7 @@ function nautilus(rand: () => number, look: Look): Shell {
           }
           inside = (rim - r) / px;
           if (r > rim / W && back < 0.5)
-            inside = Math.min(inside, ((back - lip(r)) * TAU * r) / px);
+            inside = Math.min(inside, ((back - lip(r / rim)) * TAU * r) / px);
           const cov = clamp01(inside + 0.5);
           if (cov <= 0) continue;
 
@@ -671,16 +673,22 @@ function scallop(rand: () => number, look: Look): Shell {
   const lines = 40 + 40 * rand();
   const rib = (TAU / 2) * (ribs / spread);
   const reach = (a: number) => 1 - round * (a / spread) * (a / spread);
-  const side = Math.max(earW, sin(spread) * reach(spread));
+  // The fan is widest somewhere along its margin, not always at its corner, and the margin's scallops stand a
+  // little proud of it.
+  let side = earW;
+  for (let i = 0; i <= 64; i++) {
+    const a = (spread * i) / 64;
+    side = Math.max(side, 1.012 * reach(a) * sin(a));
+  }
 
   return {
-    bounds: [-side, 0, side, 1],
+    bounds: [-side, 0, side, 1.012],
     paint(img, ox, oy, k, edge) {
       const px = 1 / k;
       const c0 = Math.max(0, Math.floor(ox - side * k) - 2);
       const c1 = Math.min(img.width, Math.ceil(ox + side * k) + 2);
       const r0 = Math.max(0, Math.floor(oy) - 2);
-      const r1 = Math.min(img.height, Math.ceil(oy + k) + 2);
+      const r1 = Math.min(img.height, Math.ceil(oy + 1.012 * k) + 2);
       for (let row = r0; row < r1; row++)
         for (let col = c0; col < c1; col++) {
           const x = (col + 0.5 - ox) / k;
@@ -688,7 +696,7 @@ function scallop(rand: () => number, look: Look): Shell {
           const r = Math.sqrt(x * x + y * y);
           const a = atan2(x, y);
           const rim = reach(a);
-          const ribFade = clamp01(((r * TAU) / (2 * ribs) / px - 2) / 3);
+          const ribFade = clamp01(((r * 2 * spread) / ribs / px - 2) / 3);
           const cr = cos(rib * a);
           const margin = rim * (1 + 0.012 * ribFade * cr);
           const fan = Math.min(
@@ -914,8 +922,9 @@ const FAMILIES: readonly Family[] = [
 ];
 
 // Small draws are supersampled until the art's short side has this many samples, so detail finer than a pixel
-// averages out the way it would in a large draw scaled down.
-const MIN_UNIT = 192;
+// averages out the way it would in a large draw scaled down. Below linocut's 192, so desk stamps with a margin,
+// whose art is 143 to 169 px across, draw once per pixel: their detail is prefiltered already.
+const MIN_UNIT = 128;
 
 function draw(
   ctx: CanvasRenderingContext2D,

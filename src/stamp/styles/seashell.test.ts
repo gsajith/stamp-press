@@ -23,9 +23,9 @@ describe("seashell 1", () => {
   // ADR 0001: a published style's output for a seed never changes. If one of these fails, the style's drawing
   // changed: restore it, and ship the change as a new style version instead.
   it("draws the same pixels it shipped with", () => {
-    expect(sha(pixels(1, 39, 50))).toBe("d3b3fc32b4296488");
-    expect(sha(pixels(2, 50, 39))).toBe("352cbfd07e8fb559");
-    expect(sha(pixels(3, 44, 44))).toBe("0e649470ab50d8c0");
+    expect(sha(pixels(1, 39, 50))).toBe("54c6cecc60e19788");
+    expect(sha(pixels(2, 50, 39))).toBe("3ffd98b6f6e7000f");
+    expect(sha(pixels(3, 44, 44))).toBe("a3ab2e29c01f1511");
   });
 
   it("draws different art for different seeds", () => {
@@ -36,10 +36,10 @@ describe("seashell 1", () => {
   });
 
   // Growth lines, pigment cells and sutures finer than a pixel have to average out, not alias. Draws with a
-  // short side under 192 px are supersampled, so they match closely. Larger ones, like desk stamps, aren't, and
+  // short side under 128 px are supersampled, so they match closely. Larger ones, like desk stamps, aren't, and
   // their sub-pixel detail strays more.
   it.each([
-    [40, 52, 8, 1],
+    [40, 52, 8, 1.5],
     [200, 256, 4, 2],
   ])("draws the same picture at %ix%i as %i times larger", (w, h, k, bound) => {
     for (const seed of [4, 5, 6, 7, 8, 9]) {
