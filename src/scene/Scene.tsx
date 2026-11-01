@@ -90,11 +90,11 @@ export default function Scene({
         <fog attach="fog" args={[DESK_COLOR, 9, 22]} />
         <CameraRig focus={focus} sun={sun} />
         <Rings placed={placed} rings={rings} />
-        <hemisphereLight args={["#fffaf0", "#e8dfd0", 1.7]} />
+        <hemisphereLight args={["#ffffff", "#e4e4e4", 1.7]} />
         <directionalLight
           ref={sun}
           position={[...SUN]}
-          color="#fff6e8"
+          color="#ffffff"
           intensity={1.7}
           castShadow
           shadow-mapSize={[2048, 2048]}
