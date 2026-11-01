@@ -6,7 +6,7 @@ import { pressStampRef } from "./stamp";
 import "./App.css";
 
 export default function App() {
-  // One stamp drops on first load.
+  // One stamp flings out of the press on first load.
   const [desk, dispatch] = useReducer(deskReducer, EMPTY_DESK, (empty) =>
     deskReducer(empty, { type: "load", ref: pressStampRef() }),
   );
@@ -40,7 +40,7 @@ export default function App() {
 
   return (
     <main>
-      <Scene desk={desk} onLand={land} />
+      <Scene desk={desk} press={button} onLand={land} />
       <button
         ref={button}
         className="press"

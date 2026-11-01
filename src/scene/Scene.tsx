@@ -50,11 +50,14 @@ function CameraRig({
   return null;
 }
 
+// Stamps fling out of the `press` button, so the scene needs to know where it sits on screen.
 export default function Scene({
   desk,
+  press,
   onLand,
 }: {
   desk: DeskState;
+  press: RefObject<HTMLElement | null>;
   onLand: (id: number) => void;
 }) {
   const sun = useRef<DirectionalLight>(null);
@@ -94,6 +97,7 @@ export default function Scene({
               key={entry.id}
               entry={entry}
               shown={isNearFocus(desk, entry)}
+              press={press}
               onLand={onLand}
             />
           ))}
