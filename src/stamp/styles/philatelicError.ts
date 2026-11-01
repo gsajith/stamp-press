@@ -59,26 +59,35 @@ const lines = (y: number, px: number, g: number, frac: number) =>
     ? 0
     : (stripes(y + px / 2, g, frac) - stripes(y - px / 2, g, frac)) / px;
 
-// A piece of a shape: its signed distance (negative inside) and its bounds.
+// A piece of a shape: its signed distance (negative inside) and its bounds. `far` never overstates how far a
+// point outside is from the piece, and changes no faster than the point moves, so the grid can trust it to rule
+// a cell out. `convex` pieces hold every point between any two of their points, so the grid can rule a cell in
+// from its corners. The sign of `d` is exact for every piece, even where its size is an estimate.
 type Piece = {
   d: (x: number, y: number) => number;
+  far?: (x: number, y: number) => number;
+  convex?: boolean;
   x0: number;
   y0: number;
   x1: number;
   y1: number;
 };
 
+// A piece whose distance is exact outside, or never too large, so it rules cells out too.
+const exact = (p: Piece): Piece => ({ ...p, far: p.d });
+
 function circle(cx: number, cy: number, r: number): Piece {
-  return {
+  return exact({
     d: (x, y) => {
       const [dx, dy] = [x - cx, y - cy];
       return Math.sqrt(dx * dx + dy * dy) - r;
     },
+    convex: true,
     x0: cx - r,
     y0: cy - r,
     x1: cx + r,
     y1: cy + r,
-  };
+  });
 }
 
 // An axis-aligned ellipse, by Quilez's approximation, which is close to the true distance near the edge.
@@ -91,6 +100,18 @@ function ellipse(cx: number, cy: number, rx: number, ry: number): Piece {
       const k1 = Math.sqrt(u1 * u1 + v1 * v1);
       return k1 === 0 ? -Math.min(rx, ry) : (k0 * (k0 - 1)) / k1;
     },
+    // Quilez's estimate can overstate the distance on a long, thin ellipse, so the grid uses the distance to its
+    // bounding circle or box instead, whichever is larger.
+    far: (x, y) => {
+      const [dx, dy] = [x - cx, y - cy];
+      const [bx, by] = [Math.abs(dx) - rx, Math.abs(dy) - ry];
+      const [ox, oy] = [Math.max(bx, 0), Math.max(by, 0)];
+      return Math.max(
+        Math.sqrt(dx * dx + dy * dy) - Math.max(rx, ry),
+        Math.sqrt(ox * ox + oy * oy),
+      );
+    },
+    convex: true,
     x0: cx - rx,
     y0: cy - ry,
     x1: cx + rx,
@@ -111,7 +132,8 @@ const ring = (p: Piece, r: number): Piece => ({
 function seg(ax: number, ay: number, bx: number, by: number, r: number): Piece {
   const [dx, dy] = [bx - ax, by - ay];
   const l2 = dx * dx + dy * dy;
-  return {
+  return exact({
+    convex: true,
     d: (x, y) => {
       const t = l2 > 0 ? clamp01(((x - ax) * dx + (y - ay) * dy) / l2) : 0;
       const [ex, ey] = [x - ax - dx * t, y - ay - dy * t];
@@ -121,14 +143,15 @@ function seg(ax: number, ay: number, bx: number, by: number, r: number): Piece {
     y0: Math.min(ay, by) - r,
     x1: Math.max(ax, bx) + r,
     y1: Math.max(ay, by) + r,
-  };
+  });
 }
 
 // An axis-aligned box with corners rounded by `round`.
 function box(x0: number, y0: number, x1: number, y1: number, round = 0): Piece {
   const [cx, cy] = [(x0 + x1) / 2, (y0 + y1) / 2];
   const [hx, hy] = [(x1 - x0) / 2 - round, (y1 - y0) / 2 - round];
-  return {
+  return exact({
+    convex: true,
     d: (x, y) => {
       const [qx, qy] = [Math.abs(x - cx) - hx, Math.abs(y - cy) - hy];
       const [ox, oy] = [Math.max(qx, 0), Math.max(qy, 0)];
@@ -140,11 +163,11 @@ function box(x0: number, y0: number, x1: number, y1: number, round = 0): Piece {
     y0,
     x1,
     y1,
-  };
+  });
 }
 
 // A convex polygon, either winding. Its distance is the largest over its edges' lines: exact inside and along
-// edges, a little short just outside corners, which is all antialiasing needs.
+// edges, a little short just outside corners, which is all antialiasing needs and never too far for the grid.
 function poly(pts: readonly Pt[]): Piece {
   let area = 0;
   for (let i = 0; i < pts.length; i++) {
@@ -163,7 +186,8 @@ function poly(pts: readonly Pt[]): Piece {
   }
   const xs = pts.map((p) => p[0]);
   const ys = pts.map((p) => p[1]);
-  return {
+  return exact({
+    convex: true,
     d: (x, y) => {
       let d = -Infinity;
       for (let i = 0; i < edges.length; i += 3) {
@@ -176,7 +200,7 @@ function poly(pts: readonly Pt[]): Piece {
     y0: Math.min(...ys),
     x1: Math.max(...xs),
     y1: Math.max(...ys),
-  };
+  });
 }
 
 // A convex polygon moved `e` inward along every edge, for an outline's inner edge.
@@ -254,20 +278,35 @@ const shapeD = (s: Shape, x: number, y: number) => {
   return s.clip ? Math.max(d, unionD(s.clip, x, y)) : d;
 };
 
+// How far a point surely is from a union of pieces, or -Infinity when a piece can't say.
+const unionFar = (pieces: Piece[], x: number, y: number) => {
+  let d = Infinity;
+  for (const p of pieces) {
+    const e = p.far ? p.far(x, y) : -Infinity;
+    if (e < d) d = e;
+  }
+  return d;
+};
+
+// Whether one convex piece holds every corner, and so everything between them.
+const holds = (pieces: Piece[], corners: readonly Pt[]) =>
+  pieces.some((p) => p.convex && corners.every(([x, y]) => p.d(x, y) < 0));
+
 // A grid over the art, and a margin round it for plates printed off the paper, to find what is near a point.
-// Each cell sorts each shape by the distance from the cell's center to it: one that misses the whole cell is
-// left out, and one that covers it all paints without testing its edge and hides every shape under it. The
-// distances are only estimates for ellipses, so the test allows half again the cell's reach.
+// Each cell sorts the shapes: one surely farther than half a sample from the whole cell is left out, and one
+// whose convex piece holds the cell grown by half a sample paints without testing its edge and hides every
+// shape under it. Both tests are exact, so the shortcut never drops an edge that needs antialiasing.
 const CELL = 1 / 32;
 const MARGIN = 0.25;
 
-function grid(W: number, H: number) {
+function grid(W: number, H: number, px: number) {
   const [cols, rows] = [
     Math.ceil((W + 2 * MARGIN) / CELL),
     Math.ceil((H + 2 * MARGIN) / CELL),
   ];
   const at = (v: number, n: number) =>
     Math.min(n - 1, Math.max(0, Math.floor((v + MARGIN) / CELL)));
+  const half = CELL / 2 + px / 2;
   return {
     count: cols * rows,
     // The cell holding a point.
@@ -277,30 +316,35 @@ function grid(W: number, H: number) {
       ((i % cols) + 0.5) * CELL - MARGIN,
       (Math.floor(i / cols) + 0.5) * CELL - MARGIN,
     ],
-    // How far from its center a cell's points can be, as a shape's estimated distance sees it.
-    reach: (px: number) => 1.5 * CELL * Math.SQRT1_2 + px / 2,
+    // The corners of the cell around (x, y), grown by half a sample.
+    corners: (x: number, y: number): Pt[] => [
+      [x - half, y - half],
+      [x + half, y - half],
+      [x + half, y + half],
+      [x - half, y + half],
+    ],
+    // How far a shape has to be from a cell's center to miss every sample in the cell.
+    reach: CELL * Math.SQRT1_2 + px / 2,
   };
 }
 type Grid = ReturnType<typeof grid>;
 
 // Paints shapes in order over a starting ink amount: each pulls the ink toward its fill where it covers.
-function layer(shapes: Shape[], g: Grid, px: number) {
-  const reach = g.reach(px);
+function layer(shapes: Shape[], g: Grid) {
   const cells = Array.from({ length: g.count }, (_, i) => {
     const [x, y] = g.center(i);
+    const corners = g.corners(x, y);
     let list: { s: Shape; full: boolean }[] = [];
     for (const s of shapes) {
-      if (
-        x < s.x0 - reach ||
-        x > s.x1 + reach ||
-        y < s.y0 - reach ||
-        y > s.y1 + reach
-      )
+      const r = g.reach;
+      if (x < s.x0 - r || x > s.x1 + r || y < s.y0 - r || y > s.y1 + r)
         continue;
-      const d = shapeD(s, x, y);
-      if (d >= reach) continue;
-      if (d <= -reach) list = [];
-      list.push({ s, full: d <= -reach });
+      const far = unionFar(s.pieces, x, y);
+      if (Math.max(far, s.clip ? unionFar(s.clip, x, y) : far) >= r) continue;
+      const full =
+        holds(s.pieces, corners) && (!s.clip || holds(s.clip, corners));
+      if (full) list = [];
+      list.push({ s, full });
     }
     return list;
   });
@@ -320,11 +364,11 @@ function layer(shapes: Shape[], g: Grid, px: number) {
 }
 
 // Where a union of pieces lies in each cell: -1 wholly outside, 1 wholly inside, 0 across its edge.
-function regions(pieces: Piece[], g: Grid, px: number): Int8Array {
-  const reach = g.reach(px);
+function regions(pieces: Piece[], g: Grid): Int8Array {
   return Int8Array.from({ length: g.count }, (_, i) => {
-    const d = unionD(pieces, ...g.center(i));
-    return d >= reach ? -1 : d <= -reach ? 1 : 0;
+    const [x, y] = g.center(i);
+    if (unionFar(pieces, x, y) >= g.reach) return -1;
+    return holds(pieces, g.corners(x, y)) ? 1 : 0;
   });
 }
 
@@ -1313,11 +1357,11 @@ function draw(
     return sky + (ground - sky) * land;
   };
 
-  const cells = grid(W, H);
-  const frameAt = layer(frame, cells, px);
-  const motifAt = layer(pen.shapes, cells, px);
+  const cells = grid(W, H, px);
+  const frameAt = layer(frame, cells);
+  const motifAt = layer(pen.shapes, cells);
   const clip = window(0.009);
-  const clipIn = regions(clip, cells, px);
+  const clipIn = regions(clip, cells);
   const centerAt = (x: number, y: number) => {
     const cell = cells.cell(x, y);
     const where = clipIn[cell];
