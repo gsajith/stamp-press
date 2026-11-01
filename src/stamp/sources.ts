@@ -3,13 +3,17 @@ import { pick, randomSeed, subSeed } from "./random";
 import type { StampRef } from "./ref";
 import { bauhausGrid1 } from "./styles/bauhausGrid";
 import { botanicalLSystem1 } from "./styles/botanicalLSystem";
+import { crossStitch1 } from "./styles/crossStitch";
+import { girih1 } from "./styles/girih";
 import { guillocheRosette1 } from "./styles/guillocheRosette";
 import { halftoneObject1 } from "./styles/halftoneObject";
+import { islandSurvey1 } from "./styles/islandSurvey";
 import { landscapeSilhouette1 } from "./styles/landscapeSilhouette";
 import { linocut1 } from "./styles/linocut";
 import { midCentury1 } from "./styles/midCentury";
 import { paperDiorama1 } from "./styles/paperDiorama";
 import { paperMarbling1 } from "./styles/paperMarbling";
+import { philatelicError1 } from "./styles/philatelicError";
 import { pixelSprite1 } from "./styles/pixelSprite";
 import { risoOverprint1 } from "./styles/risoOverprint";
 import { skyChart1 } from "./styles/skyChart";
@@ -71,6 +75,10 @@ export const STYLES: readonly Style[] = [
   steelEngraving1,
   paperDiorama1,
   paperMarbling1,
+  girih1,
+  crossStitch1,
+  islandSurvey1,
+  philatelicError1,
   specimenDrawer1,
 ];
 
