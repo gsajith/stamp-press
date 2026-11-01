@@ -1,26 +1,33 @@
 import type { Spot } from "../desk/desk";
 
 // The fling: a stamp shot out of the press, flying under gravity through air that slows it in proportion to
-// its speed, so it leaves fast, loses its forward speed, and drifts down at a gentle terminal speed. Pure math,
+// its speed, so it leaves fast, slows across the desk, and drifts down at a gentle terminal speed. Pure math,
 // so the aim can be tested away from the scene.
 
 export type Vec3 = [number, number, number];
 
-// How hard the air slows a stamp, per second, and how hard gravity pulls it, matching the stamp's rigid body.
+// How hard the air slows a falling stamp, per second, and how hard gravity pulls it, matching the stamp's rigid
+// body.
 export const DRAG = 2.6;
 export const GRAVITY = 9.81 * 1.04;
-// How fast a stamp leaves the press upward, so its path arcs up before it falls.
-const RISE = 3;
+// How hard the air slows a stamp across the desk, per second. Weaker than DRAG, so a stamp keeps moving toward
+// its spot all the way down instead of getting there high up and dropping straight onto it.
+export const GLIDE = 0.8;
+// How fast a stamp leaves the press upward, so its path arcs up a little before it falls.
+const RISE = 0.6;
+
+// How far a speed of 1 carries something in `t` seconds while drag `k` slows it.
+const ease = (k: number, t: number) => (1 - Math.exp(-k * t)) / k;
 
 // Where a stamp launched from `from` at `velocity` is `t` seconds later. Each axis eases from its launch speed
 // toward its terminal speed: zero across the desk, -GRAVITY / DRAG straight down.
 export function flightAt(from: Vec3, velocity: Vec3, t: number): Vec3 {
-  const ease = (1 - Math.exp(-DRAG * t)) / DRAG;
+  const across = ease(GLIDE, t);
   const sink = GRAVITY / DRAG;
   return [
-    from[0] + velocity[0] * ease,
-    from[1] + (velocity[1] + sink) * ease - sink * t,
-    from[2] + velocity[2] * ease,
+    from[0] + velocity[0] * across,
+    from[1] + (velocity[1] + sink) * ease(DRAG, t) - sink * t,
+    from[2] + velocity[2] * across,
   ];
 }
 
@@ -43,9 +50,9 @@ export function aimFling(
     else high = mid;
   }
   const duration = (low + high) / 2;
-  const ease = (1 - Math.exp(-DRAG * duration)) / DRAG;
+  const across = ease(GLIDE, duration);
   return {
-    velocity: [(to[0] - from[0]) / ease, RISE, (to[1] - from[2]) / ease],
+    velocity: [(to[0] - from[0]) / across, RISE, (to[1] - from[2]) / across],
     duration,
   };
 }

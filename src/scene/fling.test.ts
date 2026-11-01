@@ -1,18 +1,18 @@
 import { describe, expect, it } from "vitest";
 import type { Spot } from "../desk/desk";
-import { aimFling, DRAG, flightAt, GRAVITY, type Vec3 } from "./fling";
+import { aimFling, DRAG, flightAt, GLIDE, GRAVITY, type Vec3 } from "./fling";
 
 // Steps a stamp through the air at 4 kHz, independent of the closed form: gravity pulls it down and drag
-// slows it in proportion to its speed. Returns where it is after `time` seconds, or where it first meets the
+// slows it in proportion to its speed, less across the desk than up and down. Returns where it is after `time` seconds, or where it first meets the
 // desk if that comes sooner.
 function simulate(from: Vec3, velocity: Vec3, time = Infinity): Vec3 {
   const dt = 1 / 4000;
   const p: Vec3 = [...from];
   const v: Vec3 = [...velocity];
   for (let t = 0; t < time && t < 10; t += dt) {
-    v[0] -= DRAG * v[0] * dt;
+    v[0] -= GLIDE * v[0] * dt;
     v[1] -= (GRAVITY + DRAG * v[1]) * dt;
-    v[2] -= DRAG * v[2] * dt;
+    v[2] -= GLIDE * v[2] * dt;
     p[0] += v[0] * dt;
     p[1] += v[1] * dt;
     p[2] += v[2] * dt;
@@ -68,7 +68,7 @@ describe("aimFling", () => {
         (_, i) => flightAt(DESKTOP, velocity, (duration * i) / 50)[1],
       ),
     );
-    expect(peak).toBeGreaterThan(DESKTOP[1] + 0.1);
+    expect(peak).toBeGreaterThan(DESKTOP[1]);
   });
 });
 
