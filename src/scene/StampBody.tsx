@@ -145,16 +145,23 @@ export const StampBody = memo(function StampBody({
   );
 });
 
+// The detail view's paper: smoother than on the desk, so it catches a sheen, and how strongly its emboss reads.
+const SHEEN_ROUGHNESS = 0.55;
+const BUMP = 2;
+
 // A stamp's punched paper and printed face, at desk size or with a larger `face` in its place. Its geometry
-// and desk texture live only while it's mounted; `face` belongs to whoever passes it. `onTop` draws it over
-// the whole scene, after the detail view's backdrop, casting no shadow.
+// and desk texture live only while it's mounted; `face` and `relief` belong to whoever passes them. `onTop`
+// draws it over the whole scene, after the detail view's backdrop, casting no shadow. `relief` embosses the
+// face with a bump map and gives the paper a sheen, so light moves across it as it tilts.
 export function StampMesh({
   stamp,
   face,
+  relief,
   onTop = false,
 }: {
   stamp: Stamp;
   face?: Texture | null;
+  relief?: Texture;
   onTop?: boolean;
 }) {
   const anisotropy = useThree((s) => s.gl.capabilities.getMaxAnisotropy());
@@ -186,7 +193,9 @@ export function StampMesh({
       <meshStandardMaterial
         attach="material-0"
         map={face ?? desk}
-        roughness={0.85}
+        roughness={relief ? SHEEN_ROUGHNESS : 0.85}
+        bumpMap={relief ?? null}
+        bumpScale={BUMP}
         {...top}
       />
       <meshStandardMaterial

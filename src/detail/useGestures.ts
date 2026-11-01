@@ -1,4 +1,5 @@
 import { type RefObject, useEffect } from "react";
+import { aimAt, flick } from "./tilt";
 import { panBy, type View, zoomAt } from "./view";
 
 // Safari's trackpad pinch, which it sends instead of ctrl+wheel. Not in TypeScript's DOM types.
@@ -11,7 +12,8 @@ const WHEEL = { pinch: 0.01, scroll: 0.002 };
 const LINE = 16;
 
 // Ported from the blind box. Gestures on the detail view's surface, `el`, which covers the screen: a drag pans
-// the stamp, and a pinch, wheel or trackpad pinch zooms it about the fingers or the cursor. They write into
+// the stamp, and a pinch, wheel or trackpad pinch zooms it about the fingers or the cursor. A cursor tilts it
+// to face the cursor, until it leaves, and a touch drag flicks it the way the finger moves. They write into
 // `view`, which the lifted stamp reads every frame.
 export function useGestures(
   el: RefObject<HTMLElement | null>,
@@ -47,16 +49,34 @@ export function useGestures(
       pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
       last = grip();
     };
+    const touch = (e: PointerEvent) => e.pointerType === "touch";
     const move = (e: PointerEvent) => {
+      if (!touch(e)) {
+        const { tilt, pan } = view.current;
+        view.current = {
+          ...view.current,
+          tilt: aimAt(tilt, at(e.clientX, e.clientY), pan, screen()),
+        };
+      }
       const p = pointers.get(e.pointerId);
       if (!p) return;
       [p.x, p.y] = [e.clientX, e.clientY];
       const now = grip();
-      let v = panBy(view.current, now.x - last.x, now.y - last.y, screen());
+      const [dx, dy] = [now.x - last.x, now.y - last.y];
+      let v = panBy(view.current, dx, dy, screen());
       if (pointers.size >= 2)
         v = zoomAt(v, now.spread / last.spread, at(now.x, now.y), screen());
+      if (touch(e)) v = { ...v, tilt: flick(v.tilt, dx, dy) };
       view.current = v;
       last = now;
+    };
+    // A cursor leaving lets the stamp ease back flat.
+    const leave = (e: PointerEvent) => {
+      if (touch(e)) return;
+      view.current = {
+        ...view.current,
+        tilt: { ...view.current.tilt, aim: [0, 0] },
+      };
     };
     const up = (e: PointerEvent) => {
       if (pointers.delete(e.pointerId)) last = grip();
@@ -94,6 +114,7 @@ export function useGestures(
     surface.addEventListener("pointermove", move);
     surface.addEventListener("pointerup", up);
     surface.addEventListener("pointercancel", up);
+    surface.addEventListener("pointerleave", leave);
     surface.addEventListener("wheel", roll, { passive: false });
     for (const type of gestures) surface.addEventListener(type, gesture);
     return () => {
@@ -101,6 +122,7 @@ export function useGestures(
       surface.removeEventListener("pointermove", move);
       surface.removeEventListener("pointerup", up);
       surface.removeEventListener("pointercancel", up);
+      surface.removeEventListener("pointerleave", leave);
       surface.removeEventListener("wheel", roll);
       for (const type of gestures) surface.removeEventListener(type, gesture);
     };
