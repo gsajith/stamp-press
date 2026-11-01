@@ -176,7 +176,9 @@ export const StampBody = memo(function StampBody({
   return (
     <RigidBody
       ref={body}
-      // Flying stamps start kinematic and switch to dynamic in the frame loop. A settled stamp is fixed.
+      // Flying stamps start kinematic and switch to dynamic in the frame loop. A settled stamp is fixed. Keep the
+      // other props constant: react-three-rapier re-applies them all, this type included, when any one changes,
+      // which would turn a falling stamp kinematic again and leave it hanging in the air.
       type={fixed ? "fixed" : "kinematicPosition"}
       // Parked high over its spot, clear of the desk's stamps, until its first frame moves it to the press.
       position={[drop.spot[0], 100, drop.spot[1]]}
