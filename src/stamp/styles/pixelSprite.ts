@@ -89,7 +89,9 @@ function coverage(
     const parts: [number, number][] = [];
     let at = p;
     while (at < p + 1) {
-      const j = Math.floor((at - start) / cell);
+      let j = Math.floor((at - start) / cell);
+      // At an edge, division can round back into the cell just left. Step past it.
+      if (start + (j + 1) * cell <= at) j++;
       const inside = j >= 0 && j < GRID;
       // The next cell edge, or the pixel's end if the edge lies past it or the pixel is outside the grid.
       const edge = inside ? start + (j + 1) * cell : j < 0 ? start : p + 1;
