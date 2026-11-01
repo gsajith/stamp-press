@@ -10,9 +10,25 @@ export function mulberry32(seed: number): () => number {
   };
 }
 
-// An independent 32-bit seed drawn from `seed`, one per `salt`, so separate uses of a seed don't move together.
+// Scrambles a 32-bit integer (the "lowbias32" hash). mulberry32's first draws barely differ between nearby
+// seeds, so seeds pass through this first.
+function hash32(x: number): number {
+  x ^= x >>> 16;
+  x = Math.imul(x, 0x7feb352d);
+  x ^= x >>> 15;
+  x = Math.imul(x, 0x846ca68b);
+  x ^= x >>> 16;
+  return x >>> 0;
+}
+
+// An independent random stream from `seed`, one per `salt`, so separate uses of a seed don't move together.
+export function stream(seed: number, salt: number): () => number {
+  return mulberry32(hash32((seed ^ salt) >>> 0));
+}
+
+// An independent 32-bit seed drawn from `seed`, one per `salt`.
 export function subSeed(seed: number, salt: number): number {
-  return Math.floor(mulberry32((seed ^ salt) >>> 0)() * 2 ** 32);
+  return Math.floor(stream(seed, salt)() * 2 ** 32);
 }
 
 // A fresh seed for a new stamp.

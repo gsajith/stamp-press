@@ -1,6 +1,6 @@
 import type { Palette } from "./palettes";
-import { type Punch, punchFromRandom } from "./punch";
-import { mulberry32, pick } from "./random";
+import { type Punch, punchFromRandom, punchGeometry } from "./punch";
+import { pick, stream } from "./random";
 import type { StampRef } from "./ref";
 import { type ArtSource, SOURCES, type Style } from "./sources";
 
@@ -22,7 +22,7 @@ export function resolveStamp(
 ): Stamp | null {
   const source = sources.find((s) => s.id === ref.source);
   if (!source) return null;
-  const rand = mulberry32(ref.seed);
+  const rand = stream(ref.seed, 0x3b9aca07);
   const art = source.art(ref.seed);
   const accepted = art.style.palettes;
   const palette = pick(
@@ -34,4 +34,45 @@ export function resolveStamp(
   const punch = punchFromRandom(rand);
   const margin = rand() < 0.6 ? 0.045 + 0.035 * rand() : 0;
   return { ref, art, palette, punch, margin };
+}
+
+// Draws a stamp's art to fill the `width` by `height` pixels at the top left of `ctx`, at any size.
+export function drawArt(
+  ctx: CanvasRenderingContext2D,
+  { art, palette }: Stamp,
+  width: number,
+  height: number,
+) {
+  art.style.draw(ctx, width, height, art.seed, palette);
+}
+
+// Draws a stamp's whole face at `scale` pixels per stamp unit: paper, the art inside its margin, and the punch
+// cut out of it, with everything outside the outline left transparent. `canvas` makes a scratch canvas.
+export function drawFace(
+  ctx: CanvasRenderingContext2D,
+  stamp: Stamp,
+  scale: number,
+  canvas: (width: number, height: number) => CanvasRenderingContext2D,
+) {
+  const { width, height, outline, inner } = punchGeometry(stamp.punch);
+  const [w, h] = [Math.round(width * scale), Math.round(height * scale)];
+  ctx.fillStyle = stamp.palette.paper;
+  ctx.fillRect(0, 0, w, h);
+  // A full-bleed stamp's art runs into the teeth. Otherwise it sits a margin inside the notches.
+  const inset =
+    stamp.margin > 0
+      ? Math.round(((width - inner.width) / 2 + stamp.margin) * scale)
+      : 0;
+  const [aw, ah] = [w - 2 * inset, h - 2 * inset];
+  const art = canvas(aw, ah);
+  drawArt(art, stamp, aw, ah);
+  ctx.drawImage(art.canvas, inset, inset);
+  ctx.save();
+  ctx.globalCompositeOperation = "destination-in";
+  ctx.beginPath();
+  for (const [x, y] of outline)
+    ctx.lineTo((x + width / 2) * (w / width), (height / 2 - y) * (h / height));
+  ctx.closePath();
+  ctx.fill();
+  ctx.restore();
 }

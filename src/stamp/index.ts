@@ -1,6 +1,6 @@
 // The stamp module: what a stamp is, from a reference to drawn art. See GLOSSARY.md and ADR 0001.
 export { formatStampRef, parseStampRef, type StampRef } from "./ref";
-export { resolveStamp, type Stamp } from "./stamp";
+export { drawArt, drawFace, resolveStamp, type Stamp } from "./stamp";
 export {
   CURRENT_SOURCE,
   proceduralSource,

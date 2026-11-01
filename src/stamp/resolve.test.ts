@@ -22,6 +22,53 @@ describe("resolving a stamp reference", () => {
     expect(count((s) => s.margin > 0)).toBe(2);
   });
 
+  // ADR 0001: a published source keeps resolving a seed to the same stamp. If this fails, restore the old
+  // behavior and ship the change as a new source version instead.
+  it("resolves procedural1 seeds to the stamps it shipped with", () => {
+    const summary = [1, 2, 3].map((seed) => {
+      const { art, palette, punch, margin } = resolveStamp({
+        source: "procedural1",
+        seed,
+      })!;
+      return [art.style.id, art.seed, palette.id, punch, margin];
+    });
+    expect(summary).toEqual([
+      [
+        "landscape-silhouette-1",
+        1983344870,
+        "riso",
+        {
+          aspect: "portrait",
+          pitch: 0.07300047545926645,
+          notch: 0.020526876250019414,
+        },
+        0.07318961856188252,
+      ],
+      [
+        "landscape-silhouette-1",
+        1290762667,
+        "harbor",
+        {
+          aspect: "portrait",
+          pitch: 0.0720323305367492,
+          notch: 0.026893274029233152,
+        },
+        0.07723850482143463,
+      ],
+      [
+        "landscape-silhouette-1",
+        2075127583,
+        "brick",
+        {
+          aspect: "portrait",
+          pitch: 0.08499600142706186,
+          notch: 0.02923106451052254,
+        },
+        0,
+      ],
+    ]);
+  });
+
   it("returns null for an unknown source", () => {
     expect(resolveStamp({ source: "nosuchsource", seed: 1 })).toBeNull();
   });

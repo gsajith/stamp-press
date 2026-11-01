@@ -1,5 +1,5 @@
 import { PALETTES_1, type Palette } from "./palettes";
-import { mulberry32, pick, subSeed } from "./random";
+import { pick, stream, subSeed } from "./random";
 import { landscapeSilhouette1 } from "./styles/landscapeSilhouette";
 
 // A style: one procedural look, drawn by code from a seed and a palette. It draws in resolution-independent
@@ -38,7 +38,7 @@ export function proceduralSource(
     id,
     palettes,
     art: (seed) => ({
-      style: pick(styles, mulberry32(subSeed(seed, 0x51ed270b))),
+      style: pick(styles, stream(seed, 0x51ed270b)),
       seed: subSeed(seed, 0x2c1b3c6d),
     }),
   };
