@@ -264,14 +264,14 @@ function launchPoint(
   return [p.x, p.y, p.z];
 }
 
-// The detail view's paper: smoother than on the desk, so it catches a sheen, and how strongly its emboss reads.
+// The detail view's paper: smoother than on the desk, so it catches a sheen, and how strongly `relief` reads.
 const SHEEN_ROUGHNESS = 0.55;
 const BUMP = 2;
 
 // A stamp's punched paper and printed face, at desk size or with a larger `face` in its place. Its geometry
 // and desk texture live only while it's mounted; `face` and `relief` belong to whoever passes them. `onTop`
-// draws it over the whole scene, after the detail view's backdrop, casting no shadow. `relief` embosses the
-// face with a bump map and gives the paper a sheen, so light moves across it as it tilts.
+// draws it over the whole scene, after the detail view's backdrop, casting no shadow, on smoother paper that
+// catches a sheen. `relief`, a height map, embosses the face, so light moves across it as it tilts.
 export function StampMesh({
   stamp,
   face,
@@ -280,7 +280,7 @@ export function StampMesh({
 }: {
   stamp: Stamp;
   face?: Texture | null;
-  relief?: Texture;
+  relief?: Texture | null;
   onTop?: boolean;
 }) {
   const anisotropy = useThree((s) => s.gl.capabilities.getMaxAnisotropy());
@@ -310,9 +310,12 @@ export function StampMesh({
       renderOrder={onTop ? 2 : 0}
     >
       <meshStandardMaterial
+        // Three.js only builds a bump map into the shader it compiles first, so the relief arriving swaps in a
+        // new material.
+        key={relief ? "relief" : "plain"}
         attach="material-0"
         map={face ?? desk}
-        roughness={relief ? SHEEN_ROUGHNESS : 0.85}
+        roughness={onTop ? SHEEN_ROUGHNESS : 0.85}
         bumpMap={relief ?? null}
         bumpScale={BUMP}
         {...top}

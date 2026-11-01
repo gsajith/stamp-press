@@ -1,12 +1,12 @@
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { Physics } from "@react-three/rapier";
 import { type RefObject, Suspense, useRef, useState } from "react";
-import type { DirectionalLight } from "three";
+import type { DirectionalLight, PointLight } from "three";
 import { type Desk as DeskState, isNearFocus } from "../desk/desk";
 import type { View } from "../detail/view";
 import { backoff, FOV, VIEW } from "./camera";
 import { Desk, DESK_COLOR } from "./Desk";
-import { Lifted } from "./Lifted";
+import { Lifted, SHEEN } from "./Lifted";
 import type { Placed } from "./placed";
 import { Rings } from "./Rings";
 import { StampBody } from "./StampBody";
@@ -73,6 +73,9 @@ export default function Scene({
   onOpen: (id: number) => void;
 }) {
   const sun = useRef<DirectionalLight>(null);
+  // The detail view's sheen, dark until a stamp lifts. Always in the scene, so opening a stamp doesn't change
+  // the light count, which would recompile every lit material's shader.
+  const sheen = useRef<PointLight>(null);
   const [placed] = useState<Placed>(() => new Map());
   const [rings] = useState(() => new Map<number, HTMLButtonElement>());
   const { focus, open } = desk;
@@ -109,6 +112,12 @@ export default function Scene({
           shadow-camera-top={4}
           shadow-camera-bottom={-4}
         />
+        <pointLight
+          ref={sheen}
+          color="#ffffff"
+          intensity={0}
+          distance={SHEEN.reach}
+        />
         <Suspense fallback={null}>
           <Physics>
             <Desk focus={focus} />
@@ -131,6 +140,7 @@ export default function Scene({
               entry={desk.stamps[lifted]}
               placed={placed}
               view={view}
+              sheen={sheen}
               leaving={open !== lifted}
               onDown={() => setLifted(null)}
             />

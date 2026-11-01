@@ -18,7 +18,8 @@ import { punchGeometry, resolveStamp } from "../stamp";
 import { DESK_COLOR } from "./Desk";
 import type { Placed } from "./placed";
 import { StampMesh } from "./StampBody";
-import { DETAIL_TEXTURE, embossTexture, faceTexture } from "./stampMesh";
+import type { Painted } from "./face.worker";
+import { DETAIL_TEXTURE, faceTexture } from "./stampMesh";
 
 // How far in front of the camera the stamp floats, in desk units. Its scale, not its distance, makes it fill
 // the screen, so it stays well clear of the camera's near plane however far it zooms.
@@ -29,9 +30,14 @@ const FILL = 0.8;
 const LIFT_TIME = 0.45;
 // How far the desk fades behind the stamp once it's up.
 const BACKDROP = 0.75;
-// A soft white light up and to the left, between the camera and the stamp, whose sheen slides across the
-// paper as it tilts. In camera space, in desk units, with its reach kept short of the desk.
-const SHEEN = { at: [-0.8, 0.9, -0.9], intensity: 0.7, reach: 2.4 } as const;
+// The sheen light (see the scene's): a soft white light up and to the left, between the camera and the stamp,
+// whose sheen slides across the paper as it tilts. In camera space, in desk units, with its reach kept short
+// of the desk.
+export const SHEEN = {
+  at: [-0.8, 0.9, -0.9],
+  intensity: 0.7,
+  reach: 2.4,
+} as const;
 
 // Turns a stamp lying face up, its top away from the camera, to face the camera upright.
 const FACING = new Quaternion().setFromEuler(new Euler(Math.PI / 2, 0, 0));
@@ -40,20 +46,22 @@ const ease = (t: number) => (t < 0.5 ? 4 * t ** 3 : 1 - (-2 * t + 2) ** 3 / 2);
 // The detail view's stamp, in the Canvas: the open stamp, drawn here in place of its desk mesh, lifts from
 // where it lies to float face on in front of the camera, while the desk fades behind it. There it pans, zooms
 // and tilts with `view`, which the detail view's gestures write, and this runs the tilt's spring. A visitor
-// who prefers reduced motion gets no tilt. Its paper is embossed along the punch, and a light up close puts a
-// sheen on it that slides across as it tilts. It lifts with its desk texture while a worker redraws it at
-// DETAIL_TEXTURE, swaps that in when it's ready, and releases it on unmount. `leaving` takes it back down,
-// then `onDown`.
+// who prefers reduced motion gets no tilt. The scene's `sheen` light, which this brings up close, puts a sheen
+// on the paper that slides across as it tilts. It lifts with its desk texture while a worker redraws it at
+// DETAIL_TEXTURE, with the height map that embosses its punched edge, swaps those in when they're ready, and
+// releases them on unmount. `leaving` takes it back down, then `onDown`.
 export function Lifted({
   entry,
   placed,
   view,
+  sheen,
   leaving,
   onDown,
 }: {
   entry: DeskStamp;
   placed: Placed;
   view: RefObject<View>;
+  sheen: RefObject<PointLight | null>;
   leaving: boolean;
   onDown: () => void;
 }) {
@@ -64,26 +72,26 @@ export function Lifted({
   const anisotropy = useThree((s) => s.gl.capabilities.getMaxAnisotropy());
   const group = useRef<Group>(null);
   const backdrop = useRef<Mesh>(null);
-  const sheen = useRef<PointLight>(null);
   const [still] = useState(
     () => matchMedia("(prefers-reduced-motion: reduce)").matches,
   );
-  const relief = useMemo(() => embossTexture(stamp), [stamp]);
-  useEffect(() => () => relief.dispose(), [relief]);
   // The lift's progress: 0 on the desk, 1 up.
   const t = useRef(0);
   const down = useRef(false);
-  const [face, setFace] = useState<Texture | null>(null);
-  const wanted = !leaving && !face;
+  const [detail, setDetail] = useState<{
+    face: Texture;
+    relief: Texture;
+  } | null>(null);
+  const wanted = !leaving && !detail;
   useEffect(() => {
     if (!wanted) return;
     const worker = new Worker(new URL("./face.worker.ts", import.meta.url), {
       type: "module",
     });
-    worker.onmessage = ({ data }: MessageEvent<ImageBitmap>) => {
-      const texture = faceTexture(data);
-      texture.anisotropy = anisotropy;
-      setFace(texture);
+    worker.onmessage = ({ data }: MessageEvent<Painted>) => {
+      const face = faceTexture(data.face);
+      face.anisotropy = anisotropy;
+      setDetail({ face, relief: faceTexture(data.relief, true) });
     };
     // If it fails, the stamp stays at desk size.
     worker.postMessage({ ref: entry.ref, size: DETAIL_TEXTURE });
@@ -91,11 +99,20 @@ export function Lifted({
   }, [wanted, entry.ref, anisotropy]);
   useEffect(
     () => () => {
-      face?.dispose();
-      (face?.image as ImageBitmap | undefined)?.close();
+      for (const texture of detail ? [detail.face, detail.relief] : []) {
+        texture.dispose();
+        (texture.image as ImageBitmap).close();
+      }
     },
-    [face],
+    [detail],
   );
+  // The light stays in the scene, dark, once the stamp is down.
+  useEffect(() => {
+    const light = sheen.current;
+    return () => {
+      if (light) light.intensity = 0;
+    };
+  }, [sheen]);
 
   // Where it lies on the desk, read as it opens: a stamp only opens once it has landed and gone still.
   const [from] = useState(() => {
@@ -186,14 +203,13 @@ export function Lifted({
           fog={false}
         />
       </mesh>
-      <pointLight
-        ref={sheen}
-        color="#ffffff"
-        intensity={0}
-        distance={SHEEN.reach}
-      />
       <group ref={group}>
-        <StampMesh stamp={stamp} face={face} relief={relief} onTop />
+        <StampMesh
+          stamp={stamp}
+          face={detail?.face}
+          relief={detail?.relief}
+          onTop
+        />
       </group>
     </>
   );

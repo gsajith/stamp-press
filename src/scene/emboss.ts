@@ -1,5 +1,7 @@
 import { type Punch, punchGeometry } from "../stamp";
 
+// The height map's pixels along a stamp's long side. Its slopes are soft, so it needs far fewer than the face.
+export const EMBOSS_TEXTURE = 1024;
 // How far in from the cut the embossed ridge peaks, in stamp units (a long side is 1).
 export const RIDGE = 0.01;
 // The height of the paper inside the ridge, where the art lies flat, from 0 at the cut to 1 on the ridge.
