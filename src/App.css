@@ -54,6 +54,6 @@ main {
 }
 
 .press:focus-visible {
-  outline: 3px solid #e0a43a;
+  outline: 3px solid #23201c;
   outline-offset: 3px;
 }
