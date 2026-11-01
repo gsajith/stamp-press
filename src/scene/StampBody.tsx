@@ -25,7 +25,7 @@ const SWAY = 0.35;
 
 // One stamp falling like light paper: a thin rigid body with heavy drag that can only turn about the
 // vertical, so it always lands art up. The flutter is scripted on top: the art tilts and the body sways side
-// to side, both fading out as it nears the desk.
+// to side, both fading out as it nears the desk and ending when it first touches down.
 export function StampBody({ stamp, drop }: { stamp: Stamp; drop: Drop }) {
   const body = useRef<RapierRigidBody>(null);
   const art = useRef<Group>(null);
@@ -46,13 +46,24 @@ export function StampBody({ stamp, drop }: { stamp: Stamp; drop: Drop }) {
   );
 
   const [p1, p2, w1, w2] = drop.flutter;
+  // Set on the first contact, with the desk or with a stamp already on the pile. From then on physics has it.
   const landed = useRef(false);
-  useFrame(({ clock }) => {
+  useFrame(({ clock }, dt) => {
     const b = body.current;
-    if (landed.current || !b || !art.current) return;
+    const a = art.current;
+    if (!b || !a) return;
+    if (landed.current) {
+      // Ease the last of the tilt out rather than snapping flat.
+      if (a.rotation.x === 0 && a.rotation.z === 0) return;
+      const k = Math.exp(-12 * dt);
+      a.rotation.x = Math.abs(a.rotation.x) < 1e-3 ? 0 : a.rotation.x * k;
+      a.rotation.z = Math.abs(a.rotation.z) < 1e-3 ? 0 : a.rotation.z * k;
+      return;
+    }
+    // The flutter also fades with height over the desk, so a stamp that reaches it untouched lands flat.
     const fall = Math.min(1, Math.max(0, b.translation().y / FLUTTER_HEIGHT));
     const t = clock.elapsedTime;
-    art.current.rotation.set(
+    a.rotation.set(
       TILT * fall * Math.sin(w1 * t + p1),
       0,
       TILT * fall * Math.sin(w2 * t + p2),
@@ -66,11 +77,6 @@ export function StampBody({ stamp, drop }: { stamp: Stamp; drop: Drop }) {
       },
       true,
     );
-    // Down, or resting on another stamp: let physics have it from here.
-    if (fall < 0.02) {
-      landed.current = true;
-      art.current.rotation.set(0, 0, 0);
-    }
   });
 
   return (
@@ -84,6 +90,9 @@ export function StampBody({ stamp, drop }: { stamp: Stamp; drop: Drop }) {
       angularDamping={1.5}
       gravityScale={0.8}
       ccd
+      onCollisionEnter={() => {
+        landed.current = true;
+      }}
     >
       <CuboidCollider
         args={[width / 2, THICKNESS / 2, height / 2]}
