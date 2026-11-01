@@ -88,13 +88,15 @@ function run(s: number, gap: number, half: number): number {
 const HAIR = 0.1;
 // Tones darker than this get a second, crossing set of lines.
 const CROSS = 0.6;
+// Solid ink, for parts thinner than the line spacing, like spars, which lines would break into dashes.
+const SOLID = 2;
 
 // Small draws are supersampled until the art's short side has this many samples, so shape edges and beads
 // finer than a pixel average out. Lines need no supersampling: `lines` covers them exactly.
 const MIN_UNIT = 128;
 
-// A layer of the scene. It returns how much of the sample it covers, and sets `tone` (0 is paper, 1 solid
-// ink) and `phase`, the position across its lines in art units, for the covered part.
+// A layer of the scene. It returns how much of the sample it covers, and sets `tone` (0 is paper, SOLID is
+// solid ink) and `phase`, the position across its lines in art units, for the covered part.
 type Layer = (u: number, v: number, col: number) => number;
 
 // A scene: layers back to front (water, at `horizon`, prints between `back` and `front`), and how much a
@@ -462,13 +464,15 @@ function draw(
       return edgeS(d);
     };
 
-    // Two or three masts, the middle one tallest, each with a stack of square sails and a yard over each.
+    // Two or three masts, from the stern forward, each with a stack of square sails and a yard over each. The
+    // mainmast is the tallest: the middle of three, or the aft one of two.
     const masts = int(rand, 2, 3);
+    const mainAt = masts === 3 ? 1 : 0;
     const rig: { u: number; top: number; sails: number[] }[] = [];
     const tallest = Math.min(0.58 + 0.25 * rand(), keel - deep + 0.86);
     for (let i = 0; i < masts; i++) {
       const u = mid + dir * half * (-0.55 + (1.15 * i) / (masts - 1)) * 0.8;
-      const top = deck(u) - tallest * (i === 1 ? 1 : 0.86);
+      const top = deck(u) - tallest * (i === mainAt ? 1 : 0.86);
       const count = int(rand, 2, 3);
       const from = deck(u) - 0.07;
       const to = top + 0.07;
@@ -493,7 +497,7 @@ function draw(
           const yard =
             edgeS(0.006 - Math.abs(v - high)) * edgeS(w + 0.02 - Math.abs(du));
           if (yard > 0 || mast > 0) {
-            tone = 0.9;
+            tone = SOLID;
             phase = v * S;
             return Math.max(yard, mast);
           }
@@ -513,7 +517,7 @@ function draw(
           );
         }
         if (mast > 0) {
-          tone = 0.9;
+          tone = SOLID;
           phase = v * S;
           return mast;
         }
@@ -521,14 +525,14 @@ function draw(
       return 0;
     };
     // A jib from the bowsprit to the foremast, and a pennant at the main top.
-    const fore = rig[dir > 0 ? rig.length - 1 : 0];
+    const fore = rig[masts - 1];
     const tip = mid + dir * (half + 0.16);
     const jib = triangle([
       [tip, deck(mid + dir * half) - 0.03],
       [fore.u + dir * 0.02, fore.top + 0.08],
       [fore.u + dir * 0.02, deck(fore.u) - 0.08],
     ]);
-    const main = rig[1];
+    const main = rig[mainAt];
     const pennant = triangle([
       [main.u, main.top],
       [main.u, main.top + 0.035],
@@ -537,7 +541,7 @@ function draw(
     const headsails: Layer = (u, v) => {
       const p = pennant(u, v);
       if (p > 0) {
-        tone = 0.85;
+        tone = SOLID;
         phase = v * S;
         return p;
       }
@@ -811,8 +815,8 @@ function draw(
     for (let k = layers.length - 1; k >= 0 && open > 0; k--) {
       const c = layers[k](u, v, col);
       if (c <= 0) continue;
-      let e = 0;
-      if (tone > 0) {
+      let e = tone >= SOLID ? 1 : 0;
+      if (tone > 0 && tone < SOLID) {
         const share =
           tone < 0.03
             ? (tone * HAIR) / 0.03
