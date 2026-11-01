@@ -24,7 +24,7 @@ const clamp01 = (x: number) => (x < 0 ? 0 : x > 1 ? 1 : x);
 const TAU = 6.283185307179586;
 
 // A sine-like wave from a polynomial, the same in every engine, unlike Math.sin. Its terms all share a sign, so it
-// strays from a true sine by up to 0.16 (0.86 at pi / 2). rosette1's output is frozen (ADR 0001), so it stays.
+// strays from a true sine by up to 0.16 (0.84 at pi / 2). rosette1's output is frozen (ADR 0001), so it stays.
 // Don't copy it: skyChart.ts has a correct sine.
 function sin(x: number): number {
   let y = x - TAU * Math.round(x / TAU);

@@ -3,11 +3,14 @@ import { pick, randomSeed, subSeed } from "./random";
 import type { StampRef } from "./ref";
 import { bauhausGrid1 } from "./styles/bauhausGrid";
 import { botanicalLSystem1 } from "./styles/botanicalLSystem";
+import { girih1 } from "./styles/girih";
 import { guillocheRosette1 } from "./styles/guillocheRosette";
 import { halftoneObject1 } from "./styles/halftoneObject";
 import { landscapeSilhouette1 } from "./styles/landscapeSilhouette";
 import { linocut1 } from "./styles/linocut";
 import { midCentury1 } from "./styles/midCentury";
+import { paperDiorama1 } from "./styles/paperDiorama";
+import { paperMarbling1 } from "./styles/paperMarbling";
 import { philatelicError1 } from "./styles/philatelicError";
 import { pixelSprite1 } from "./styles/pixelSprite";
 import { risoOverprint1 } from "./styles/risoOverprint";
@@ -67,6 +70,9 @@ export const STYLES: readonly Style[] = [
   linocut1,
   skyChart1,
   steelEngraving1,
+  paperDiorama1,
+  paperMarbling1,
+  girih1,
   philatelicError1,
 ];
 
