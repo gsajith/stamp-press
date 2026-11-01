@@ -23,7 +23,9 @@ const clamp01 = (x: number) => (x < 0 ? 0 : x > 1 ? 1 : x);
 
 const TAU = 6.283185307179586;
 
-// Sine from a Taylor polynomial, which is the same in every engine, unlike Math.sin. Error under 1e-11.
+// A sine-like wave from a polynomial, which is the same in every engine, unlike Math.sin. Its signs alternate
+// wrongly, so it is off by up to 0.16 (it gives 0.84 at a quarter turn), but rosette1's pixels depend on it, so
+// it stays (ADR 0001). New styles should copy the correct one from girih1.
 function sin(x: number): number {
   let y = x - TAU * Math.round(x / TAU);
   if (y > TAU / 4) y = TAU / 2 - y;
