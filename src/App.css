@@ -23,6 +23,30 @@ main {
   position: relative;
 }
 
+.desk {
+  height: 100%;
+}
+
+/* Each stamp's focus ring (see Scene), kept over the stamp on screen. Only the keyboard reaches it: a click
+   goes through to the stamp in the scene. */
+.rings {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.ring {
+  position: absolute;
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  background: none;
+}
+.ring:focus-visible {
+  outline: 3px solid #23201c;
+  outline-offset: 4px;
+}
+
 .press {
   position: absolute;
   left: 50%;
@@ -42,7 +66,8 @@ main {
   touch-action: manipulation;
   transition:
     transform 120ms ease,
-    box-shadow 120ms ease;
+    box-shadow 120ms ease,
+    opacity 200ms ease;
 }
 
 .press:hover {
@@ -51,6 +76,11 @@ main {
 
 .press:active {
   transform: translateX(-50%) scale(0.96);
+}
+
+/* Out of the way while the detail view is open. */
+.desk[inert] .press {
+  opacity: 0;
 }
 
 .press:focus-visible {

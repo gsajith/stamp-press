@@ -9,8 +9,10 @@ import { drawFace, punchGeometry, type Stamp } from "../stamp";
 
 // A stamp's paper thickness, in stamp units (a long side is 1).
 export const THICKNESS = 0.008;
-// Desk stamps draw small. The detail view will redraw at around 2048 px.
-const DESK_TEXTURE = 256;
+// Desk stamps draw small, and the detail view redraws at around 2048 px, so zooming in stays sharp. Both are
+// pixels along a stamp's long side.
+export const DESK_TEXTURE = 256;
+export const DETAIL_TEXTURE = 2048;
 
 const canvas = (width: number, height: number) => {
   const c = document.createElement("canvas");
@@ -40,16 +42,12 @@ export function stampGeometry(stamp: Stamp): ExtrudeGeometry {
   return geometry;
 }
 
-// The stamp's face, punched, at desk size. Paper fills in behind the cut, so its edge texels blend to paper
-// rather than to transparent black.
-export function stampTexture(stamp: Stamp): CanvasTexture {
-  const ctx = canvas(DESK_TEXTURE, DESK_TEXTURE);
+// The stamp's face, punched, `size` pixels along its long side. Paper fills in behind the cut, so its edge
+// texels blend to paper rather than to transparent black.
+export function stampTexture(stamp: Stamp, size: number): CanvasTexture {
   const { width, height } = punchGeometry(stamp.punch);
-  [ctx.canvas.width, ctx.canvas.height] = [
-    Math.round(width * DESK_TEXTURE),
-    Math.round(height * DESK_TEXTURE),
-  ];
-  drawFace(ctx, stamp, DESK_TEXTURE, canvas);
+  const ctx = canvas(Math.round(width * size), Math.round(height * size));
+  drawFace(ctx, stamp, size, canvas);
   ctx.globalCompositeOperation = "destination-over";
   ctx.fillStyle = stamp.palette.paper;
   ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
