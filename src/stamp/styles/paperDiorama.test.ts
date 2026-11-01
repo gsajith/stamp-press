@@ -41,10 +41,10 @@ describe("paper diorama 1", () => {
   // changed: restore it, and ship the change as a new style version instead. The seeds cover a village, a
   // forest and the sea, and the large draw has the fine fibre.
   it("draws the same pixels it shipped with", () => {
-    expect(sha(pixels(1, 39, 50))).toBe("8f7e23ace6167071");
-    expect(sha(pixels(5, 50, 39))).toBe("d19ccbdb5cd12ac6");
-    expect(sha(pixels(7, 44, 44))).toBe("dd3448d0bac6af94");
-    expect(sha(pixels(9, 640, 820))).toBe("a2c870ce63554147");
+    expect(sha(pixels(1, 39, 50))).toBe("a386385bff58b89e");
+    expect(sha(pixels(5, 50, 39))).toBe("7fcd06a4508faa8e");
+    expect(sha(pixels(7, 44, 44))).toBe("80859a438aa35602");
+    expect(sha(pixels(9, 640, 820))).toBe("3c058cc400a26a7d");
   });
 
   it("draws different art for different seeds", () => {

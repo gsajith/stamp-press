@@ -102,19 +102,26 @@ function peakAt({ peaks }: Profile, x: number): number {
   return peaks[b < 0 ? 0 : b >= peaks.length ? peaks.length - 1 : b];
 }
 
-// A profile sampled at each pixel column of a draw, its x moved back by `shift`. Per column: the edge's
-// height, the factor that turns height above or below it into distance square to the edge, and the highest
-// the profile reaches nearby. A point's distance below the edge, positive in the paper, is then
-// (y - height) * factor.
+// A profile sampled at each pixel column of a draw, its x moved back by `shift`, in COLUMN numbers per column:
+//   0  the edge's height
+//   1  the factor that turns height below the edge into distance square to it, (1 + slope^2)^-1/2
+//   2  the highest the profile reaches nearby, for skipping points well above it
+//   3  the highest and
+//   4  the lowest the profile reaches within `reach` cells either side
+// Square-to-the-edge distance alone stays small all the way down under a steep edge, like a wall or a mast, so
+// the distance a sheet uses is held to at least the gap to the lowest point nearby (see `solid`).
+const COLUMN = 5;
+
 function columns(
   profile: Profile,
   width: number,
   px: number,
   shift: number,
+  reach: number,
 ): Float64Array {
   const { top } = profile;
   const last = top.length - 2;
-  const out = new Float64Array(width * 3);
+  const out = new Float64Array(width * COLUMN);
   for (let c = 0; c < width; c++) {
     const x = (c + 0.5) * px - shift;
     const g = (x + PAD) * GRID;
@@ -122,9 +129,19 @@ function columns(
     const f = g < 0 ? 0 : g >= last + 1 ? 1 : g - i;
     const rise = top[i + 1] - top[i];
     const s = rise * GRID;
-    out[c * 3] = top[i] + rise * f;
-    out[c * 3 + 1] = 1 / Math.sqrt(1 + s * s);
-    out[c * 3 + 2] = peakAt(profile, x);
+    let high = Infinity;
+    let low = -Infinity;
+    for (let j = i - reach; j <= i + 1 + reach; j++) {
+      const v = top[j < 0 ? 0 : j > last + 1 ? last + 1 : j];
+      if (v < high) high = v;
+      if (v > low) low = v;
+    }
+    const o = c * COLUMN;
+    out[o] = top[i] + rise * f;
+    out[o + 1] = 1 / Math.sqrt(1 + s * s);
+    out[o + 2] = peakAt(profile, x);
+    out[o + 3] = high;
+    out[o + 4] = low;
   }
   return out;
 }
@@ -575,9 +592,14 @@ function draw(
 
   // Every profile sampled at the pixel columns: each sheet's edge, and each blurred edge where it falls as a
   // shadow, moved along the light by its depth gap.
-  const edges = tops.map((top) => top && columns(top, width, px, 0));
+  // A point below every profile point within `reach` cells is at least `near` from the edge, or that far
+  // below the lowest of them. `near` spans a rim and a pixel, so no rim or see-through streak hangs under a
+  // steep edge, at any draw size.
+  const reach = Math.max(8, Math.ceil(2 * px * GRID));
+  const near = reach / GRID;
+  const edges = tops.map((top) => top && columns(top, width, px, 0, reach));
   const shadows = blurred.map((list) =>
-    list.map((blur, k) => columns(blur, width, px, lightX * (k + 1))),
+    list.map((blur, k) => columns(blur, width, px, lightX * (k + 1), 0)),
   );
 
   // How far into a sheet's paper a point in column `c` is, negative outside it. The backing is everywhere.
@@ -587,8 +609,14 @@ function draw(
     let d = Infinity;
     if (edge) {
       // Holes only take paper away, so a point well above the profile is outside the sheet either way.
-      if (y < edge[c * 3 + 2] - px) return -Infinity;
-      d = (y - edge[c * 3]) * edge[c * 3 + 1];
+      const o = c * COLUMN;
+      if (y < edge[o + 2] - px) return -Infinity;
+      d = (y - edge[o]) * edge[o + 1];
+      // Held to the gap past the nearby profile's lowest or highest point, so a steep edge's distance grows
+      // below its foot and above its tip.
+      if (y > edge[o + 4]) d = Math.max(d, Math.min(near, y - edge[o + 4]));
+      else if (y < edge[o + 3])
+        d = Math.min(d, -Math.min(near, edge[o + 3] - y));
     }
     const holes = cuts[k];
     if (!holes) return d;
@@ -611,9 +639,12 @@ function draw(
     if (i === F) return soft(frameSolid(sx, sy) / b);
     let edge = 1;
     if (tops[i]) {
+      // Height below the blurred edge, not distance square to it: the blur already softens the shadow sideways,
+      // and the slope factor would vary from column to column into stripes.
       const blur = shadows[i][dz - 1];
-      if (sy < blur[c * 3 + 2] - b) return 0;
-      edge = soft(((sy - blur[c * 3]) * blur[c * 3 + 1]) / b);
+      const o = c * COLUMN;
+      if (sy < blur[o + 2] - b) return 0;
+      edge = soft((sy - blur[o]) / b);
     }
     const holes = cuts[i];
     return holes && edge > 0 ? edge * soft(holes(sx, sy) / b) : edge;
