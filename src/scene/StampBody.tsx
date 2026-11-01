@@ -4,18 +4,11 @@ import {
   type RapierRigidBody,
   RigidBody,
 } from "@react-three/rapier";
-import { useEffect, useMemo, useRef } from "react";
+import { memo, useEffect, useMemo, useRef } from "react";
 import type { Group } from "three";
-import { punchGeometry, type Stamp } from "../stamp";
+import type { DeskStamp } from "../desk/desk";
+import { punchGeometry, resolveStamp } from "../stamp";
 import { stampGeometry, stampTexture, THICKNESS } from "./stampMesh";
-
-export type Drop = {
-  // Where it lands on the desk, and its turn about the vertical.
-  spot: [number, number];
-  yaw: number;
-  // Random phases and rates, so no two stamps flutter alike.
-  flutter: [number, number, number, number];
-};
 
 export const DROP_HEIGHT = 4;
 // The height over which a falling stamp's flutter dies away, so it lands flat.
@@ -25,8 +18,19 @@ const SWAY = 0.35;
 
 // One stamp falling like light paper: a thin rigid body with heavy drag that can only turn about the
 // vertical, so it always lands art up. The flutter is scripted on top: the art tilts and the body sways side
-// to side, both fading out as it nears the desk and ending when it first touches down.
-export function StampBody({ stamp, drop }: { stamp: Stamp; drop: Drop }) {
+// to side, both fading out as it nears the desk and ending when it first touches down, which it reports with
+// `onLand`. Once settled, Rapier puts the body to sleep. A stamp that isn't `shown` stays on the desk unrendered.
+export const StampBody = memo(function StampBody({
+  entry: { id, ref, drop },
+  shown,
+  onLand,
+}: {
+  entry: DeskStamp;
+  shown: boolean;
+  onLand: (id: number) => void;
+}) {
+  // A press always makes a reference to a known source.
+  const stamp = useMemo(() => resolveStamp(ref)!, [ref]);
   const body = useRef<RapierRigidBody>(null);
   const art = useRef<Group>(null);
   const anisotropy = useThree((s) => s.gl.capabilities.getMaxAnisotropy());
@@ -91,14 +95,16 @@ export function StampBody({ stamp, drop }: { stamp: Stamp; drop: Drop }) {
       gravityScale={0.8}
       ccd
       onCollisionEnter={() => {
+        if (landed.current) return;
         landed.current = true;
+        onLand(id);
       }}
     >
       <CuboidCollider
         args={[width / 2, THICKNESS / 2, height / 2]}
         friction={0.9}
       />
-      <group ref={art}>
+      <group ref={art} visible={shown}>
         <mesh geometry={geometry} castShadow receiveShadow>
           <meshStandardMaterial
             attach="material-0"
@@ -114,4 +120,4 @@ export function StampBody({ stamp, drop }: { stamp: Stamp; drop: Drop }) {
       </group>
     </RigidBody>
   );
-}
+});

@@ -1,27 +1,65 @@
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { Physics } from "@react-three/rapier";
-import { Suspense } from "react";
+import { type RefObject, Suspense, useRef } from "react";
+import type { DirectionalLight } from "three";
+import { type Desk as DeskState, focusOf, isNearFocus } from "../desk/desk";
 import { Desk, DESK_COLOR } from "./Desk";
-import { type Drop, StampBody } from "./StampBody";
-import type { Stamp } from "../stamp";
-
-export type DeskStamp = { id: number; stamp: Stamp; drop: Drop };
+import { StampBody } from "./StampBody";
 
 // Where the camera looks from, relative to the spot it looks at: tilted down and round to one side.
 const VIEW = [0.6, 3.3, 2.4] as const;
+// Where the sun shines from, relative to the same spot. It travels with the camera, so its shadows do too.
+const SUN = [-2.5, 6, 1.5] as const;
+// Roughly how long the camera's glide to a new drop takes to cover most of the way, in seconds.
+const SMOOTH_TIME = 0.35;
 
-// Backs the camera off on narrow screens so a stamp keeps its margins on a phone.
-function CameraRig() {
+// One step of a critically damped spring from x toward `to`, carrying velocity v, ported from the blind box.
+// A goal that moves mid-glide bends the path instead of jerking it. Returns [x, v].
+function damp(x: number, v: number, to: number, dt: number): [number, number] {
+  const omega = 2 / SMOOTH_TIME;
+  const e = omega * dt;
+  const decay = 1 / (1 + e + 0.48 * e * e + 0.235 * e * e * e);
+  const change = x - to;
+  const pull = (v + omega * change) * dt;
+  return [to + (change + pull) * decay, (v - omega * pull) * decay];
+}
+
+// Glides the camera to look at `focus`, the newest drop, and backs it off on narrow screens so a stamp keeps
+// its margins on a phone. The sun follows, so stamps far from the start still cast shadows.
+function CameraRig({
+  focus,
+  sun,
+}: {
+  focus: [number, number];
+  sun: RefObject<DirectionalLight | null>;
+}) {
   const aspect = useThree((s) => s.viewport.aspect);
-  useFrame(({ camera }) => {
+  const look = useRef({ x: focus[0], z: focus[1], vx: 0, vz: 0 });
+  useFrame(({ camera }, dt) => {
+    const l = look.current;
+    [l.x, l.vx] = damp(l.x, l.vx, focus[0], dt);
+    [l.z, l.vz] = damp(l.z, l.vz, focus[1], dt);
     const k = aspect < 1 ? Math.min(2, 1 / aspect) ** 0.8 : 1;
-    camera.position.set(VIEW[0] * k, VIEW[1] * k, VIEW[2] * k);
-    camera.lookAt(0, 0, 0);
+    camera.position.set(l.x + VIEW[0] * k, VIEW[1] * k, l.z + VIEW[2] * k);
+    camera.lookAt(l.x, 0, l.z);
+    const light = sun.current;
+    if (!light) return;
+    light.position.set(l.x + SUN[0], SUN[1], l.z + SUN[2]);
+    light.target.position.set(l.x, 0, l.z);
+    light.target.updateMatrixWorld();
   });
   return null;
 }
 
-export default function Scene({ stamps }: { stamps: DeskStamp[] }) {
+export default function Scene({
+  desk,
+  onLand,
+}: {
+  desk: DeskState;
+  onLand: (id: number) => void;
+}) {
+  const sun = useRef<DirectionalLight>(null);
+  const focus = focusOf(desk);
   return (
     <Canvas
       shadows
@@ -33,10 +71,11 @@ export default function Scene({ stamps }: { stamps: DeskStamp[] }) {
     >
       <color attach="background" args={[DESK_COLOR]} />
       <fog attach="fog" args={[DESK_COLOR, 9, 22]} />
-      <CameraRig />
+      <CameraRig focus={focus} sun={sun} />
       <hemisphereLight args={["#fffaf0", "#e8dfd0", 1.7]} />
       <directionalLight
-        position={[-2.5, 6, 1.5]}
+        ref={sun}
+        position={[...SUN]}
         color="#fff6e8"
         intensity={1.7}
         castShadow
@@ -50,9 +89,14 @@ export default function Scene({ stamps }: { stamps: DeskStamp[] }) {
       />
       <Suspense fallback={null}>
         <Physics>
-          <Desk />
-          {stamps.map(({ id, stamp, drop }) => (
-            <StampBody key={id} stamp={stamp} drop={drop} />
+          <Desk focus={focus} />
+          {desk.stamps.map((entry) => (
+            <StampBody
+              key={entry.id}
+              entry={entry}
+              shown={isNearFocus(desk, entry)}
+              onLand={onLand}
+            />
           ))}
         </Physics>
       </Suspense>
