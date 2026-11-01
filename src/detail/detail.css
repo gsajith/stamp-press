@@ -1,0 +1,55 @@
+/* The detail view's controls (see DetailView), over the Canvas. */
+.detail {
+  position: absolute;
+  inset: 0;
+}
+
+/* Takes every drag, pinch and wheel on the screen for the stamp, none for the page. */
+.detail__surface {
+  position: absolute;
+  inset: 0;
+  touch-action: none;
+  cursor: grab;
+}
+.detail__surface:active {
+  cursor: grabbing;
+}
+
+.detail__close {
+  position: absolute;
+  top: max(16px, env(safe-area-inset-top));
+  right: max(16px, env(safe-area-inset-right));
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: #23201c;
+  color: #f8f4ec;
+  box-shadow: 0 6px 18px rgb(35 32 28 / 0.22);
+  cursor: pointer;
+  touch-action: manipulation;
+  /* Comes in as the stamp finishes lifting. */
+  animation: detail-in 200ms ease-out 250ms both;
+}
+.detail__close svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+.detail__close:focus-visible {
+  outline: 3px solid #23201c;
+  outline-offset: 3px;
+}
+
+@keyframes detail-in {
+  from {
+    opacity: 0;
+    scale: 0.8;
+  }
+}
