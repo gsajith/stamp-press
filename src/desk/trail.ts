@@ -1,6 +1,6 @@
 import type { Area, Spot } from "./desk";
 
-// Ported from the blind box. Each drop lands a step away from the last stamp, toward open desk, so stamps
+// Ported from the blind box. Each lone drop lands a step away from the last stamp, toward open desk, so stamps
 // leave a wandering trail. The step is under a stamp's length (its long side is 1), so neighbors often
 // overlap like scattered mail.
 const DROP_STEP = { min: 0.55, max: 0.85 } as const;
