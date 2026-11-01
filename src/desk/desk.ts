@@ -1,4 +1,10 @@
-import { stream, type StampRef } from "../stamp";
+import {
+  formatStampRef,
+  parseStampRef,
+  SOURCES,
+  stream,
+  type StampRef,
+} from "../stamp";
 import { chooseBurstSpot, chooseDropSpot } from "./trail";
 
 // The desk module: the rules for what's on the desk, free of React and three.js. The scene renders its state
@@ -23,12 +29,14 @@ export type DeskStamp = {
 };
 
 // `focus` is the spot on the desk the camera centers on. `lastPress` is when the last press dropped a stamp,
-// in milliseconds. `open` is the id of the stamp in the detail view, or null when there's none.
+// in milliseconds. `open` is the id of the stamp in the detail view, or null when there's none. `opening` is
+// the stamp a share link dropped, to open once it has landed unless a press comes first, or null.
 export type Desk = {
   stamps: DeskStamp[];
   focus: Spot;
   lastPress: number;
   open: number | null;
+  opening: number | null;
 };
 
 // The desk under the screen, as offsets from the camera's center: the four-sided patch a stamp's center can
@@ -36,11 +44,12 @@ export type Desk = {
 // each left to right. It depends on the screen's shape, so the scene measures it.
 export type Area = { far: [Spot, Spot]; near: [Spot, Spot] };
 
-// Load drops the page's first stamp. Press drops another, carrying its fresh reference, the time in
+// Load drops the page's first stamp: the one `link` names, the `?stamp=` value of a share link (ADR 0001), or
+// `ref`, a fresh press, when there's no link or it names no stamp we can draw. Press drops another, carrying its fresh reference, the time in
 // milliseconds, and the visible area. The scene sends land when a stamp first touches down. Open lifts a
 // stamp into the detail view, and close puts it back.
 export type DeskEvent =
-  | { type: "load"; ref: StampRef }
+  | { type: "load"; link: string | null; ref: StampRef }
   | { type: "press"; ref: StampRef; at: number; area: Area }
   | { type: "land"; id: number }
   | { type: "open"; id: number }
@@ -51,6 +60,7 @@ export const EMPTY_DESK: Desk = {
   focus: [0, 0],
   lastPress: -Infinity,
   open: null,
+  opening: null,
 };
 
 // The most stamps that can be in the air at once. Mashing past it refuses presses until one lands.
@@ -70,9 +80,16 @@ function dropFor(ref: StampRef, spot: Spot): Drop {
 
 export function deskReducer(desk: Desk, event: DeskEvent): Desk {
   switch (event.type) {
-    case "load":
-      // The page's first stamp drops in the middle of the desk.
-      return { ...EMPTY_DESK, stamps: [stampAt(0, event.ref, [0, 0])] };
+    case "load": {
+      // The page's first stamp drops in the middle of the desk. A shared one opens once it lands.
+      const shared = event.link === null ? null : parseStampRef(event.link);
+      const known = shared && SOURCES.some((s) => s.id === shared.source);
+      return {
+        ...EMPTY_DESK,
+        stamps: [stampAt(0, known ? shared : event.ref, [0, 0])],
+        opening: known ? 0 : null,
+      };
+    }
     case "press": {
       const { stamps, focus } = desk;
       // The detail view holds the press: the desk under it stays as the visitor left it.
@@ -92,6 +109,8 @@ export function deskReducer(desk: Desk, event: DeskEvent): Desk {
         stamps: [...stamps, stampAt(stamps.length, event.ref, spot)],
         focus: burst ? focus : spot,
         lastPress: event.at,
+        // A press takes over from a shared stamp that hasn't opened yet: it stays on the desk.
+        opening: null,
       };
     }
     case "land": {
@@ -104,7 +123,7 @@ export function deskReducer(desk: Desk, event: DeskEvent): Desk {
     case "open":
       // Only a stamp lying on the desk lifts, and only one at a time.
       if (desk.open !== null || !desk.stamps[event.id]?.landed) return desk;
-      return { ...desk, open: event.id };
+      return { ...desk, open: event.id, opening: null };
     case "close":
       return desk.open === null ? desk : { ...desk, open: null };
   }
@@ -116,6 +135,19 @@ const stampAt = (id: number, ref: StampRef, spot: Spot): DeskStamp => ({
   drop: dropFor(ref, spot),
   landed: false,
 });
+
+// The share link the desk implies: the open stamp's reference, or null when none is open.
+export function deskLink(desk: Desk): string | null {
+  return desk.open === null ? null : formatStampRef(desk.stamps[desk.open].ref);
+}
+
+// `href` with its `?stamp=` set to `link`, or taken out when that's null. Everything else stays.
+export function linkUrl(href: string, link: string | null): string {
+  const url = new URL(href);
+  if (link === null) url.searchParams.delete("stamp");
+  else url.searchParams.set("stamp", link);
+  return url.href;
+}
 
 // The camera frames a few desk units around its center, even backed off on a phone, so stamps further than
 // this from it can't be on screen and stop rendering. The camera only moves on along the trail, so the trail

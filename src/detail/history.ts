@@ -1,14 +1,14 @@
 // The browser history, as much of it as the detail view uses.
 type Nav = {
   readonly state: unknown;
-  pushState(state: unknown, unused: string): void;
+  pushState(state: unknown, unused: string, url: string): void;
   replaceState(state: unknown, unused: string): void;
   back(): void;
 };
 
 // Ported from the blind box. Keeps the detail view and the browser history in step, so the browser's Back
-// closes the view. Opening pushes an entry, and closing goes Back past it, so the desk's own entry is
-// where Back starts from again. The address stays as it is.
+// closes the view. Opening pushes an entry at the stamp's share link, and closing goes Back past it, so the
+// desk's own entry, and its address, is where Back starts from again.
 export function detailHistory(nav: Nav) {
   let open = false;
   let closing = false;
@@ -19,10 +19,10 @@ export function detailHistory(nav: Nav) {
     (state as { detail?: unknown } | null)?.detail === entry.detail;
 
   return {
-    // Adds the open view's entry, unless one is already open.
-    show() {
+    // Adds the open view's entry at `url`, unless one is already open.
+    show(url: string) {
       if (open) return;
-      nav.pushState(entry, "");
+      nav.pushState(entry, "", url);
       open = true;
       closing = false;
     },

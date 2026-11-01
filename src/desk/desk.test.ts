@@ -5,15 +5,17 @@ import {
   type Desk,
   deskReducer,
   type DeskEvent,
+  deskLink,
   EMPTY_DESK,
   isNearFocus,
+  linkUrl,
   type Spot,
 } from "./desk";
 
 const ref = (seed: number): StampRef => ({ source: "land1", seed });
 const run = (events: DeskEvent[], from: Desk = EMPTY_DESK) =>
   events.reduce(deskReducer, from);
-const load: DeskEvent = { type: "load", ref: ref(1) };
+const load: DeskEvent = { type: "load", link: null, ref: ref(1) };
 const land = (id: number): DeskEvent => ({ type: "land", id });
 
 // Where on the desk, around the camera's center, a stamp can land and show whole on a landscape screen: wider
@@ -167,6 +169,72 @@ describe("desk", () => {
 
     it("starts with no stamp open", () => {
       expect(run([load]).open).toBeNull();
+    });
+  });
+
+  describe("a share link", () => {
+    const loadLink = (link: string | null): DeskEvent => ({
+      type: "load",
+      link,
+      ref: ref(1),
+    });
+    const close: DeskEvent = { type: "close" };
+
+    it("drops the stamp it names, then opens it once it has landed", () => {
+      const desk = run([loadLink("bau1-1z141z3")]);
+      expect(desk.stamps).toHaveLength(1);
+      expect(desk.stamps[0].ref).toEqual({ source: "bau1", seed: 2 ** 32 - 1 });
+      expect(desk.opening).toBe(0);
+      // It can't open while it's still falling.
+      expect(desk.open).toBeNull();
+      expect(deskLink(desk)).toBeNull();
+      const landed = run([land(0), { type: "open", id: 0 }], desk);
+      expect(landed.open).toBe(0);
+      expect(landed.opening).toBeNull();
+      expect(deskLink(landed)).toBe("bau1-1z141z3");
+      // Closing clears the link, and the desk carries on as usual.
+      const closed = run([close], landed);
+      expect(deskLink(closed)).toBeNull();
+      expect(run([press(7, 9000)], closed).stamps).toHaveLength(2);
+    });
+
+    it("stays down once the visitor presses before it opens", () => {
+      const desk = run([loadLink("bau1-1z141z3"), press(7, 500)]);
+      expect(desk.stamps).toHaveLength(2);
+      expect(desk.opening).toBeNull();
+    });
+
+    it.each([
+      ["malformed", "land1_zz"],
+      ["out of range", "land1-zzzzzzz"],
+      ["from an unknown source", "nope9-1z141z3"],
+      ["missing", null],
+    ])("falls back to a fresh press when %s", (_, link) => {
+      const desk = run([loadLink(link)]);
+      expect(desk.stamps.map((s) => s.ref)).toEqual([ref(1)]);
+      expect(desk.opening).toBeNull();
+      expect(deskLink(desk)).toBeNull();
+    });
+
+    it("links any open stamp by its reference", () => {
+      const desk = run([load, land(0), { type: "open", id: 0 }]);
+      expect(deskLink(desk)).toBe("land1-1");
+    });
+
+    it("writes the link into the address, or takes it out, and keeps the rest", () => {
+      const base = "https://stamp.press/?a=1";
+      expect(linkUrl(base, "land1-1")).toBe(
+        "https://stamp.press/?a=1&stamp=land1-1",
+      );
+      expect(linkUrl("https://stamp.press/?stamp=land1-1&a=1#x", null)).toBe(
+        "https://stamp.press/?a=1#x",
+      );
+      expect(linkUrl("https://stamp.press/?stamp=junk", null)).toBe(
+        "https://stamp.press/",
+      );
+      expect(linkUrl("https://stamp.press/?stamp=land1-1", "land1-2")).toBe(
+        "https://stamp.press/?stamp=land1-2",
+      );
     });
   });
 
