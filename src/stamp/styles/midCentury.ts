@@ -135,14 +135,23 @@ const above = (v0: number): Shape => ({
   box: [-Infinity, -Infinity, Infinity, v0],
 });
 
+// Plain loops in the distance functions: they run for every pixel a shape's box touches.
 const union = (...shapes: Shape[]): Shape => ({
-  d: (u, v) => Math.min(...shapes.map((s) => s.d(u, v))),
+  d: (u, v) => {
+    let d = Infinity;
+    for (const s of shapes) d = Math.min(d, s.d(u, v));
+    return d;
+  },
   box: [0, 1, 2, 3].map((i) =>
     (i < 2 ? Math.min : Math.max)(...shapes.map((s) => s.box[i])),
   ),
 });
 const intersect = (...shapes: Shape[]): Shape => ({
-  d: (u, v) => Math.max(...shapes.map((s) => s.d(u, v))),
+  d: (u, v) => {
+    let d = -Infinity;
+    for (const s of shapes) d = Math.max(d, s.d(u, v));
+    return d;
+  },
   box: [0, 1, 2, 3].map((i) =>
     (i < 2 ? Math.max : Math.min)(...shapes.map((s) => s.box[i])),
   ),
@@ -166,6 +175,7 @@ const turn = (t: number): Turn => {
 const STRAIGHT: Turn = { c: 1, s: 0 };
 
 // A shape drawn in its own frame, placed at (x, y), turned, scaled by k, and mirrored left to right if `flip`.
+// An unbounded shape, such as a half plane, stays unbounded.
 type Frame = { x: number; y: number; turn: Turn; k: number; flip: boolean };
 const place = (
   shape: Shape,
@@ -173,6 +183,7 @@ const place = (
 ): Shape => {
   const f = flip ? -1 : 1;
   const [u0, v0, u1, v1] = shape.box;
+  const bounded = shape.box.every(Number.isFinite);
   const corners = [
     [u0, v0],
     [u1, v0],
@@ -187,12 +198,14 @@ const place = (
       const [du, dv] = [(u - x) / k, (v - y) / k];
       return k * shape.d(f * (c * du + s * dv), c * dv - s * du);
     },
-    box: [
-      Math.min(...corners.map((p) => p[0])),
-      Math.min(...corners.map((p) => p[1])),
-      Math.max(...corners.map((p) => p[0])),
-      Math.max(...corners.map((p) => p[1])),
-    ],
+    box: bounded
+      ? [
+          Math.min(...corners.map((p) => p[0])),
+          Math.min(...corners.map((p) => p[1])),
+          Math.max(...corners.map((p) => p[0])),
+          Math.max(...corners.map((p) => p[1])),
+        ]
+      : [-Infinity, -Infinity, Infinity, Infinity],
   };
 };
 const shift = (shape: Shape, dx: number, dy: number): Shape =>
