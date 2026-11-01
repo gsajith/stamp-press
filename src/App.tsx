@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useReducer, useRef, useState } from "react";
-import { deskReducer, EMPTY_DESK } from "./desk/desk";
+import { deskLink, deskReducer, EMPTY_DESK, linkUrl } from "./desk/desk";
 import { DetailView } from "./detail/DetailView";
 import { useDetailHistory } from "./detail/useDetailHistory";
 import { UNMOVED, type View } from "./detail/view";
@@ -8,14 +8,24 @@ import Scene from "./scene/Scene";
 import { pressStampRef } from "./stamp";
 import "./App.css";
 
+// How long after a shared stamp lands its detail view opens, in milliseconds: long enough for StampBody to
+// settle it and fix it in place (at most 0.6 s), since the view lifts it from where it lies.
+const SHARED_OPEN_DELAY = 700;
+
 export default function App() {
-  // One stamp drops on first load.
+  // One stamp flings out of the press on first load: the one a share link names, or a fresh press.
   const [desk, dispatch] = useReducer(deskReducer, EMPTY_DESK, (empty) =>
-    deskReducer(empty, { type: "load", ref: pressStampRef() }),
+    deskReducer(empty, {
+      type: "load",
+      link: new URLSearchParams(location.search).get("stamp"),
+      ref: pressStampRef(),
+    }),
   );
   // The open stamp's pan, zoom and tilt, which the detail view's gestures write and the scene reads every frame.
   const [view] = useState<{ current: View }>(() => ({ current: UNMOVED }));
-  // The desk refuses a press while too many stamps are still falling. The scene fills the window, so the
+  // Stamps fling out of the button, so the scene reads where it sits on screen.
+  const button = useRef<HTMLButtonElement>(null);
+  // The desk refuses a press while too many stamps are still in the air. The scene fills the window, so the
   // window's shape sets how much desk a burst can spread over.
   const press = useCallback(
     () =>
@@ -29,7 +39,17 @@ export default function App() {
   );
   const land = useCallback((id: number) => dispatch({ type: "land", id }), []);
   const open = useCallback((id: number) => dispatch({ type: "open", id }), []);
-  const close = useDetailHistory(desk.open, dispatch);
+  const link = deskLink(desk);
+  const close = useDetailHistory(link, dispatch);
+
+  // A shared stamp opens once it has landed and settled.
+  const opening = desk.opening;
+  const openingLanded = opening !== null && desk.stamps[opening].landed;
+  useEffect(() => {
+    if (opening === null || !openingLanded) return;
+    const timer = setTimeout(() => open(opening), SHARED_OPEN_DELAY);
+    return () => clearTimeout(timer);
+  }, [opening, openingLanded, open]);
 
   // Space and Enter press the button from anywhere. On a button, such as a stamp's focus ring, its own click
   // handles them.
@@ -74,8 +94,15 @@ export default function App() {
     <main>
       {/* Behind the detail view, the desk and its controls are out of reach. */}
       <div className="desk" inert={desk.open !== null}>
-        <Scene desk={desk} view={view} onLand={land} onOpen={open} />
+        <Scene
+          desk={desk}
+          view={view}
+          press={button}
+          onLand={land}
+          onOpen={open}
+        />
         <button
+          ref={button}
           className="press"
           type="button"
           onClick={press}
@@ -84,8 +111,13 @@ export default function App() {
           Generate a stamp
         </button>
       </div>
-      {desk.open !== null && (
-        <DetailView id={desk.open} view={view} onClose={close} />
+      {desk.open !== null && link !== null && (
+        <DetailView
+          id={desk.open}
+          link={linkUrl(location.href, link)}
+          view={view}
+          onClose={close}
+        />
       )}
     </main>
   );

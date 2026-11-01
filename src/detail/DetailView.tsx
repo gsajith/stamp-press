@@ -1,4 +1,10 @@
-import { type RefObject, useEffect, useLayoutEffect, useRef } from "react";
+import {
+  type RefObject,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 import { useGestures } from "./useGestures";
 import { panBy, type Screen, UNMOVED, type View, zoomAt } from "./view";
 import "./detail.css";
@@ -16,21 +22,39 @@ const KEYS: Record<string, (v: View, screen: Screen) => View> = {
   "-": (v, s) => zoomAt(v, 1 / ZOOM_STEP, [0, 0], s),
 };
 
+// How long the copy-link control shows how the copy went, in milliseconds.
+const COPIED_TIME = 1600;
+
 // The detail view's controls, over the Canvas, where the open stamp floats (see the scene's Lifted). The whole
-// screen takes the drag and pinch, and a close control sits in the corner. Focus moves to the close control,
+// screen takes the drag and pinch, a close control sits in the corner, and a copy-link control copies `link`,
+// the stamp's share link, where the desk's press button was. Focus moves to the close control,
 // and Esc closes too. The arrow keys pan and + and - zoom, for the keyboard. Each open starts unpanned and
 // unzoomed.
 export function DetailView({
   id,
+  link,
   view,
   onClose,
 }: {
   id: number;
+  link: string;
   view: RefObject<View>;
   onClose: () => void;
 }) {
   const surface = useRef<HTMLDivElement>(null);
   const close = useRef<HTMLButtonElement>(null);
+  const [copied, setCopied] = useState<"copied" | "failed" | null>(null);
+  useEffect(() => {
+    if (copied === null) return;
+    const timer = setTimeout(() => setCopied(null), COPIED_TIME);
+    return () => clearTimeout(timer);
+  }, [copied]);
+  // The clipboard is missing outside a secure context, which throws here, and the copy can be refused.
+  const copy = () =>
+    Promise.resolve()
+      .then(() => navigator.clipboard.writeText(link))
+      .then(() => setCopied("copied"))
+      .catch(() => setCopied("failed"));
   useLayoutEffect(() => {
     view.current = UNMOVED;
   }, [view]);
@@ -69,6 +93,18 @@ export function DetailView({
         <svg viewBox="0 0 16 16" aria-hidden="true">
           <path d="M3 3l10 10M13 3L3 13" />
         </svg>
+      </button>
+      <button
+        type="button"
+        className="detail__copy"
+        aria-live="polite"
+        onClick={copy}
+      >
+        {copied === "copied"
+          ? "Link copied"
+          : copied === "failed"
+            ? "Couldn't copy"
+            : "Copy link"}
       </button>
     </div>
   );
