@@ -1,6 +1,7 @@
 import { useFrame, useThree } from "@react-three/fiber";
 import {
   CuboidCollider,
+  type RapierCollider,
   type RapierRigidBody,
   RigidBody,
   useRapier,
@@ -18,6 +19,8 @@ import { stampGeometry, stampTexture, THICKNESS } from "./stampMesh";
 const LAUNCH_DISTANCE = 2;
 // Below this height, on the way down, physics takes over the flight so the stamp can land on the pile.
 const HANDOFF = 0.3;
+// With reduced motion a stamp skips the fling and settles onto its spot from this height.
+const SETTLE_HEIGHT = 0.5;
 // The height over which a falling stamp's flutter dies away, so it lands flat.
 const FLUTTER_HEIGHT = 1.2;
 const TILT = 0.5;
@@ -36,11 +39,12 @@ type Flight = {
 
 // One stamp flung from the press like light paper. It leaves from the `press` button's place on screen, just in
 // front of the camera, arcs away over the desk, and flutters down onto its spot: the art tilts and sways side to
-// side once it's away from the press, both fading out near the desk. The script flies it as a kinematic body, so stamps in the
-// air never knock into each other. Near the desk it becomes a thin dynamic body with heavy drag that can only
-// turn about the vertical, so physics lands it art up on whatever lies there. It reports its first touch with
-// `onLand`, and Rapier puts it to sleep once settled. A stamp that isn't `shown` stays on the desk as a body
-// alone, its mesh and texture released until it comes back into range.
+// side once it's away from the press, both fading out near the desk. The script flies it as a kinematic body
+// with its collider off, so stamps in the air pass through each other. With reduced motion it skips the fling
+// and settles onto its spot from just above. Near the desk it becomes a thin dynamic body with heavy drag that
+// can only turn about the vertical, so physics lands it art up on whatever lies there. It reports its first
+// touch with `onLand`, and Rapier puts it to sleep once settled. A stamp that isn't `shown` stays on the desk as
+// a body alone, its mesh and texture released until it comes back into range.
 export const StampBody = memo(function StampBody({
   entry: { id, ref, drop },
   shown,
@@ -56,6 +60,7 @@ export const StampBody = memo(function StampBody({
   const stamp = useMemo(() => resolveStamp(ref)!, [ref]);
   const { rapier } = useRapier();
   const body = useRef<RapierRigidBody>(null);
+  const collider = useRef<RapierCollider>(null);
   const art = useRef<Group>(null);
   const { width, height } = punchGeometry(stamp.punch);
 
@@ -66,11 +71,16 @@ export const StampBody = memo(function StampBody({
   const flight = useRef<Flight>(null);
   useFrame(({ camera, clock, gl }, dt) => {
     const b = body.current;
+    const c = collider.current;
     const a = art.current;
-    if (!b || !a) return;
+    if (!b || !c || !a) return;
     if (phase.current === "press") {
       phase.current = "flying";
-      const from = launchPoint(camera, gl.domElement, press.current);
+      // Stamps in the air pass through each other. Only once physics has it does a stamp touch anything.
+      c.setEnabled(false);
+      const from: Vec3 = matchMedia("(prefers-reduced-motion: reduce)").matches
+        ? [drop.spot[0], SETTLE_HEIGHT, drop.spot[1]]
+        : launchPoint(camera, gl.domElement, press.current);
       flight.current = { from, ...aimFling(from, drop.spot), t: 0, at: from };
       b.setTranslation({ x: from[0], y: from[1], z: from[2] }, true);
       // The mesh shows from the next frame, once it has moved to the launch.
@@ -91,7 +101,8 @@ export const StampBody = memo(function StampBody({
     let flutter = Math.min(1, Math.max(0, b.translation().y / FLUTTER_HEIGHT));
     const f = flight.current;
     if (phase.current === "flying" && f) {
-      f.t += dt;
+      // A long frame, such as on coming back to the tab, ends the flight at its spot rather than past it.
+      f.t = Math.min(f.t + dt, f.duration);
       const [x, y, z] = flightAt(f.from, f.velocity, f.t);
       flutter =
         Math.min(1, Math.max(0, y / FLUTTER_HEIGHT)) *
@@ -106,6 +117,7 @@ export const StampBody = memo(function StampBody({
         // the desk, so the hand-off stays just above it.
         phase.current = "falling";
         b.setBodyType(rapier.RigidBodyType.Dynamic, true);
+        c.setEnabled(true);
         b.setTranslation(
           { x: at[0], y: Math.max(at[1], 0.05), z: at[2] },
           true,
@@ -145,13 +157,13 @@ export const StampBody = memo(function StampBody({
       gravityScale={1.04}
       ccd
       onCollisionEnter={() => {
-        // Only physics lands a stamp. One still waiting or flying passes through what it meets.
         if (phase.current !== "falling") return;
         phase.current = "landed";
         onLand(id);
       }}
     >
       <CuboidCollider
+        ref={collider}
         args={[width / 2, THICKNESS / 2, height / 2]}
         friction={0.9}
       />
