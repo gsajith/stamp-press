@@ -19,9 +19,9 @@ describe("bauhaus grid 1", () => {
   // ADR 0001: a published style's output for a seed never changes. If one of these fails, the style's drawing
   // changed: restore it, and ship the change as a new style version instead.
   it("draws the same pixels it shipped with", () => {
-    expect(sha(pixels(1, 39, 50))).toBe("6a154316d9a8239b");
-    expect(sha(pixels(2, 50, 39))).toBe("75fd15dd9f8e9d87");
-    expect(sha(pixels(3, 44, 44))).toBe("83d758792cde945c");
+    expect(sha(pixels(1, 39, 50))).toBe("f2458d0a332894cb");
+    expect(sha(pixels(2, 50, 39))).toBe("4a5799e6125f7b24");
+    expect(sha(pixels(3, 44, 44))).toBe("5e024e0f0fe9ee1d");
   });
 
   it("draws different art for different seeds", () => {

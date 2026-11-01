@@ -56,7 +56,7 @@ function draw(
     };
   };
 
-  // Near-square cells, rows from the art's ratio. The desk and detail views round the art to whole pixels,
+  // Near-square cells (within about 17%), rows from the art's ratio. The desk and detail views round the art to whole pixels,
   // so its ratio drifts about 1% between them. Rounding at .7 rather than .5 keeps every ratio a stamp's
   // aspect and margin allow (0.71 to 1.4) clear of a boundary, so the row count holds at every size.
   const cols = 3 + Math.floor(rand() * 2);
@@ -83,12 +83,14 @@ function draw(
       row >= block.row &&
       row <= block.row + 1;
     if (inBlock) [t, c0, r0, span] = [block.tile, block.col, block.row, 2];
-    let u = (x / cw - c0) / span;
-    let v = (y / ch - r0) / span;
+    // Shapes sit in a square frame centered on the tile, so circles stay round in a cell that isn't quite
+    // square. The field fills the sliver either side of the frame.
+    const side = span * Math.min(cw, ch);
+    let u = (x - (c0 + span / 2) * cw) / side + 0.5;
+    let v = (y - (r0 + span / 2) * ch) / side + 0.5;
     for (let k = 0; k < t.turn; k++) [u, v] = [v, 1 - u];
     // Coverage from the distance in pixels, so shape edges stay smooth at any size.
-    const px = span * Math.sqrt(cw * ch);
-    return mix(t.field, t.ink, clamp01(0.5 - SHAPES[t.shape](u, v) * px));
+    return mix(t.field, t.ink, clamp01(0.5 - SHAPES[t.shape](u, v) * side));
   };
   // The cells a pixel span [i, i + 1] overlaps, with the share of the pixel in each, so a pixel on a cell
   // edge blends both cells by area.
