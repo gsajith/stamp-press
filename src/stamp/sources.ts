@@ -1,6 +1,7 @@
 import { PALETTES_1, type Palette } from "./palettes";
 import { pick, randomSeed, subSeed } from "./random";
 import type { StampRef } from "./ref";
+import { bauhausGrid1 } from "./styles/bauhausGrid";
 import { landscapeSilhouette1 } from "./styles/landscapeSilhouette";
 
 // A style: one procedural look, drawn by code from a seed and a palette. It draws in resolution-independent
@@ -42,7 +43,7 @@ export function styleSource(
 
 // The styles a press picks from. To add a style, add one line here and nothing else: a reference names its
 // style, so adding one never changes an existing reference's stamp.
-export const STYLES: readonly Style[] = [landscapeSilhouette1];
+export const STYLES: readonly Style[] = [landscapeSilhouette1, bauhausGrid1];
 
 // Style versions no longer pressed. They stay registered so their share links keep working: when a new
 // version replaces a style in STYLES, move the old one here.
