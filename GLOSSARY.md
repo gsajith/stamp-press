@@ -34,6 +34,10 @@ _Avoid_: Generator, theme, template
 The value that, with its art source, fully determines a stamp, so the same pair always yields the same stamp.
 _Avoid_: ID, key
 
+**Share link**:
+The page's address with a stamp's reference in `?stamp=`, such as `?stamp=land1-1z141z3`. The address carries it while that stamp is in the detail view. Opening one drops that stamp first on an empty desk, then opens it once it lands.
+_Avoid_: Permalink, URL
+
 **Palette**:
 A shared set of two to four inks and a paper tone that a stamp is printed in, picked by its seed.
 _Avoid_: Theme, color scheme
