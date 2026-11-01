@@ -15,7 +15,7 @@ export type Stamp = {
 };
 
 // Everything follows from the reference, so the same one always gives the same stamp. Null for an unknown
-// source. The draws below are frozen with every published source: append new ones, never reorder.
+// source. Every style shares the draws below, so they are frozen: append new ones, never reorder.
 export function resolveStamp(
   ref: StampRef,
   sources: readonly ArtSource[] = SOURCES,
@@ -47,7 +47,7 @@ export function drawArt(
 }
 
 // How far the art sits inside the stamp's bounds on every side, in stamp units. A full-bleed stamp's art runs
-// into the teeth. Otherwise it sits a margin inside the notches. Frozen with every published source.
+// into the teeth. Otherwise it sits a margin inside the notches. Frozen, since every style shares it.
 export function artInset({ punch, margin }: Stamp): number {
   return margin > 0 ? punch.notch + margin : 0;
 }

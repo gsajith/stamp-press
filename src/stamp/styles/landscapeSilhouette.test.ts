@@ -5,8 +5,8 @@ import { drawArt, resolveStamp } from "..";
 
 // Draws a stamp's art in Node and returns its RGBA pixels.
 function pixels(seed: number, width: number, height: number) {
-  const stamp = resolveStamp({ source: "procedural1", seed })!;
-  expect(stamp.art.style.id).toBe("landscape-silhouette-1");
+  const stamp = resolveStamp({ source: "land1", seed })!;
+  expect(stamp.art.style.id).toBe("land1");
   const ctx = createCanvas(width, height).getContext("2d");
   drawArt(ctx as unknown as CanvasRenderingContext2D, stamp, width, height);
   return ctx.getImageData(0, 0, width, height).data;

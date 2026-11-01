@@ -118,6 +118,6 @@ function draw(
 }
 
 export const landscapeSilhouette1: Style = {
-  id: "landscape-silhouette-1",
+  id: "land1",
   draw,
 };
