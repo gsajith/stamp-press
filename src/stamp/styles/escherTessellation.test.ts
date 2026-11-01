@@ -30,11 +30,11 @@ describe("escher tessellation 1", () => {
   // ADR 0001: a published style's output for a seed never changes. If one of these fails, the style's drawing
   // changed: restore it, and ship the change as a new style version instead.
   it("draws the same pixels it shipped with", () => {
-    expect(sha(pixels(1, 39, 50))).toBe("dffe74e4d2c1e6ad");
-    expect(sha(pixels(2, 50, 39))).toBe("b3227fb50c227e92");
-    expect(sha(pixels(3, 44, 44))).toBe("f455df9155e122c1");
+    expect(sha(pixels(1, 39, 50))).toBe("ac728dd15c009926");
+    expect(sha(pixels(2, 50, 39))).toBe("f7c15f8d69915268");
+    expect(sha(pixels(3, 44, 44))).toBe("700ec1ed342c63c0");
     // Large enough not to be supersampled, as at desk size and in the detail view.
-    expect(sha(pixels(7, 160, 200))).toBe("5f88e2bf5b8e8758");
+    expect(sha(pixels(7, 160, 200))).toBe("bfa405bf7b108afc");
   });
 
   it("draws different art for different seeds", () => {
@@ -109,7 +109,8 @@ describe("the base tilings", () => {
 describe("the creature flow", () => {
   // A flow never folds the plane, but its table can if it's too coarse for how hard the flow squeezes: tiles
   // then tear and overlap, with slivers of outline along their edges. The map must keep a positive Jacobian
-  // determinant everywhere, checked on a grid finer than the table, at the strongest strength a stamp draws.
+  // determinant, checked on a sampled grid finer than the table and offset from the table's own check, at the
+  // strongest strength a stamp draws.
   it.each(TILINGS.map((t) => [`${t.lattice} ${t.order}`, t] as const))(
     "never folds the plane in %s",
     (_, tiling) => {

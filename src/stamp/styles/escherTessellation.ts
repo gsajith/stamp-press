@@ -413,7 +413,8 @@ function displacement(
   // The flow itself never folds, but where it squeezes hardest the table can be too coarse to follow it, and
   // its splines overshoot into folds. Scaling the displacement by a keeps the flow's symmetry, and the map's
   // Jacobian determinant is then 1 + a tr(A) + a^2 det(A), where A is the displacement's Jacobian. So find the
-  // largest a that keeps it positive at every table sample and every cell's middle, and keep a margin under it.
+  // largest a that keeps it positive at every table sample and every cell's middle, and keep a margin under it,
+  // since the splines can still dip between those points: at 0.8 of it, about one flow in 7000 still folded.
   let scale = 1;
   const out = new Float64Array(6);
   for (let j = 0; j < 2 * TABLE; j++)
@@ -435,7 +436,7 @@ function displacement(
             if (r > 0 && r < root) root = r;
         }
       }
-      if (0.8 * root < scale) scale = 0.8 * root;
+      if (0.7 * root < scale) scale = 0.7 * root;
     }
   if (scale < 1) for (let i = 0; i < table.length; i++) table[i] *= scale;
   return at;
