@@ -16,6 +16,7 @@ import { paperMarbling1 } from "./styles/paperMarbling";
 import { philatelicError1 } from "./styles/philatelicError";
 import { pixelSprite1 } from "./styles/pixelSprite";
 import { risoOverprint1 } from "./styles/risoOverprint";
+import { seashell1 } from "./styles/seashell";
 import { skyChart1 } from "./styles/skyChart";
 import { specimenDrawer1 } from "./styles/specimenDrawer";
 import { steelEngraving1 } from "./styles/steelEngraving";
@@ -79,6 +80,7 @@ export const STYLES: readonly Style[] = [
   crossStitch1,
   islandSurvey1,
   philatelicError1,
+  seashell1,
   specimenDrawer1,
 ];
 
