@@ -8,7 +8,7 @@ export {
   type Style,
 } from "./sources";
 export { PALETTES_1, type Palette } from "./palettes";
-export { randomSeed } from "./random";
+export { randomSeed, stream } from "./random";
 export {
   punchGeometry,
   type Aspect,
