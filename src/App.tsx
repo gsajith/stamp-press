@@ -1,13 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Scene, { type DeskStamp } from "./scene/Scene";
-import { CURRENT_SOURCE, randomSeed, resolveStamp } from "./stamp";
+import { pressStampRef, resolveStamp } from "./stamp";
 import "./App.css";
 
 // Drops land around one spot for now, scattered a little so they overlap like mail.
 const SCATTER = 0.25;
 
 function newStamp(id: number): DeskStamp {
-  const stamp = resolveStamp({ source: CURRENT_SOURCE, seed: randomSeed() })!;
+  const stamp = resolveStamp(pressStampRef())!;
   const r = Math.random;
   return {
     id,
