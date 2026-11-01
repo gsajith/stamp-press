@@ -15,8 +15,11 @@ export const DROP_HEIGHT = 4;
 // The height over which a falling stamp's flutter dies away, so it lands flat.
 const FLUTTER_HEIGHT = 1.2;
 const TILT = 0.5;
-// After landing, a stamp settles for at most this long, or until it has nearly stopped, then it's fixed in
-// place. Thin bodies resting on each other otherwise keep trading contact impulses and bounce.
+// After landing, a stamp settles until it has nearly stopped, or for at most SETTLE_TIME, then it's fixed in
+// place. Thin bodies resting on each other otherwise keep trading contact impulses and bounce. It always gets
+// MIN_SETTLE first: on the contact frame a stamp can sit inside the desk with almost no speed, and freezing it
+// then would leave it buried until Rapier has pushed it back out.
+const MIN_SETTLE = 0.25;
 const SETTLE_TIME = 0.6;
 const REST_SPEED = 0.05;
 const SWAY = 0.35;
@@ -69,7 +72,8 @@ export const StampBody = memo(function StampBody({
         const v = b.linvel();
         if (
           settling.current > SETTLE_TIME ||
-          Math.hypot(v.x, v.y, v.z) < REST_SPEED
+          (settling.current > MIN_SETTLE &&
+            Math.hypot(v.x, v.y, v.z) < REST_SPEED)
         )
           setFixed(true);
       }
