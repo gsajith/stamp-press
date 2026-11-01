@@ -2,8 +2,8 @@ import { describe, expect, it } from "vitest";
 import { detailHistory } from "./history";
 
 // A browser history to drive by hand: a list of entries' states and where we are in it.
-function fakeHistory(start: unknown = null) {
-  const entries: unknown[] = [start];
+function fakeHistory() {
+  const entries: unknown[] = [null];
   let at = 0;
   const nav = {
     backs: 0,
@@ -85,7 +85,9 @@ describe("detailHistory", () => {
   });
 
   it("closes on the first try after a reload left the page on an old view's entry", () => {
-    const nav = fakeHistory({ detail: 0.5 });
+    const nav = fakeHistory();
+    // The page before the reload opened a view and left its entry behind.
+    detailHistory(nav).show();
     const h = detailHistory(nav);
     h.show();
     expect(h.close()).toBe(false);
