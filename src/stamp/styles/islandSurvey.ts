@@ -25,6 +25,9 @@ const mix = (a: Rgb, b: Rgb, t: number): Rgb => [
   a[2] + (b[2] - a[2]) * t,
 ];
 const clamp01 = (x: number) => (x < 0 ? 0 : x > 1 ? 1 : x);
+// Squared distance between two points, multiplied out since ** isn't exact in every engine.
+const dist2 = (ax: number, ay: number, bx: number, by: number) =>
+  (ax - bx) * (ax - bx) + (ay - by) * (ay - by);
 
 // A float in [0, 1) for each lattice point, the "lowbias32" hash of its coordinates and a salt.
 function hash2(ix: number, iy: number, salt: number): number {
@@ -75,6 +78,8 @@ function fbm(x: number, y: number, salt: number, octaves: number): number {
 const OUTER = 0.055;
 const BAND = 0.014;
 const NEAT = OUTER + BAND;
+// The neat line's half width.
+const NEAT_HALF = 0.0016;
 // How far land stays from the neat line.
 const CLEAR = 0.035;
 
@@ -222,7 +227,7 @@ function basis(f: number, w: Float64Array, d: Float64Array) {
   d[3] = f2 / 2;
 }
 
-// Reads the field at a point: its height and the length and direction of its slope, per art unit.
+// Reads the field at a point in map units: its height and its slope along x and y, per map unit.
 function sampler({ h, nx, ny }: Field) {
   const [wx, dx, wy, dy] = [0, 0, 0, 0].map(() => new Float64Array(4));
   const out = { h: 0, gx: 0, gy: 0 };
@@ -614,9 +619,7 @@ function summits(
   found.sort((p, q) => q[2] - p[2]);
   const kept: [number, number, number][] = [];
   for (const p of found)
-    if (
-      kept.every((q) => (p[0] - q[0]) ** 2 + (p[1] - q[1]) ** 2 > apart * apart)
-    )
+    if (kept.every((q) => dist2(p[0], p[1], q[0], q[1]) > apart * apart))
       kept.push(p);
   return kept;
 }
@@ -657,7 +660,7 @@ function river(
     pts.push(x, y);
     for (const o of others)
       for (let m = 0; m < o.length; m += 2)
-        if ((o[m] - x) ** 2 + (o[m + 1] - y) ** 2 < step * step) {
+        if (dist2(o[m], o[m + 1], x, y) < step * step) {
           pts.push(o[m], o[m + 1]);
           return pts;
         }
@@ -778,8 +781,7 @@ function draw(
     const { h, gx, gy } = at(x, y);
     const g = Math.sqrt(gx * gx + gy * gy);
     if (h < 0.02 || h > step * 1.5 || g > 6) continue;
-    if (spots.some(([sx, sy]) => (sx - x) ** 2 + (sy - y) ** 2 < 0.15 * 0.15))
-      continue;
+    if (spots.some(([sx, sy]) => dist2(sx, sy, x, y) < 0.15 * 0.15)) continue;
     spots.push([x, y]);
   }
   for (const [x, y] of spots) {
@@ -928,8 +930,9 @@ function draw(
 
       // The frame: neat line, a band of blocks alternating along each side, and the outer rule.
       const edge = Math.min(x, W - x, y, H - y);
-      if (edge < NEAT + px) {
-        paint(dark, line((edge - NEAT) / px, 0.0016 / px));
+      // The neat line reaches NEAT_HALF inside the map, so the frame's reach does too.
+      if (edge < NEAT + NEAT_HALF + px) {
+        paint(dark, line((edge - NEAT) / px, NEAT_HALF / px));
         paint(dark, line((edge - OUTER) / px, 0.0008 / px));
         const inBand = clamp01(Math.min(edge - OUTER, NEAT - edge) / px + 0.5);
         if (inBand > 0) {
