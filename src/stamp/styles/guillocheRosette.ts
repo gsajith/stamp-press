@@ -46,8 +46,8 @@ type Ring = {
   radius: number;
   amp: number;
   lobes: number;
-  // cos and sin of each curve's phase.
-  phases: [number, number][];
+  // cos and sin of each curve's phase, interleaved.
+  phases: Float64Array;
   color: Rgb;
 };
 
@@ -59,10 +59,12 @@ function ring(
   offset: number,
   color: Rgb,
 ): Ring {
-  const phases = Array.from({ length: count }, (_, j): [number, number] => {
+  const phases = new Float64Array(2 * count);
+  for (let j = 0; j < count; j++) {
     const a = offset + (TAU * j) / count;
-    return [cos(a), sin(a)];
-  });
+    phases[2 * j] = cos(a);
+    phases[2 * j + 1] = sin(a);
+  }
   return { radius, amp, lobes, phases, color };
 }
 
@@ -146,66 +148,87 @@ function draw(
     return { offset: waveAmp * sin(t), stretch: Math.sqrt(1 + slope * slope) };
   });
 
-  const powers: [number, number][] = Array.from(
-    { length: maxLobes + 1 },
-    () => [1, 0],
-  );
-  // The color at one sample, `column` being its sample column.
-  function sample(cx: number, cy: number, column: number): Rgb {
+  // The hot loop below allocates nothing: a desk-size draw runs over a hundred thousand samples.
+  // cos and sin of k times a sample's angle for every lobe count k, interleaved.
+  const powers = new Float64Array(2 * (maxLobes + 1));
+  powers[0] = 1;
+  const fieldHalf = half * 0.8;
+  // Each sample's color adds into these.
+  let red = 0;
+  let green = 0;
+  let blue = 0;
+
+  // Adds the color at one sample, `column` being its sample column.
+  function sample(cx: number, cy: number, column: number) {
     const r = Math.sqrt(cx * cx + cy * cy);
+    let cr = base[0];
+    let cg = base[1];
+    let cb = base[2];
     if (r > clear) {
+      // The waves and their mirror image.
       const { offset, stretch } = waves[column];
-      let blank = 1;
-      for (const f of [cy - offset, cy + offset]) {
-        const d = (f - spacing * Math.round(f / spacing)) / stretch;
-        blank *= 1 - line(d, half * 0.8);
+      const f = cy - offset;
+      const g = cy + offset;
+      const df = (f - spacing * Math.round(f / spacing)) / stretch;
+      const dg = (g - spacing * Math.round(g / spacing)) / stretch;
+      const t = 1 - (1 - line(df, fieldHalf)) * (1 - line(dg, fieldHalf));
+      cr += (fieldInk[0] - cr) * t;
+      cg += (fieldInk[1] - cg) * t;
+      cb += (fieldInk[2] - cb) * t;
+    } else if (r >= 1e-9) {
+      // Powers of the angle by repeated complex multiplication.
+      const c1 = cx / r;
+      const s1 = cy / r;
+      for (let k = 1; k <= maxLobes; k++) {
+        const c = powers[2 * k - 2];
+        const s = powers[2 * k - 1];
+        powers[2 * k] = c * c1 - s * s1;
+        powers[2 * k + 1] = c * s1 + s * c1;
       }
-      return mix(base, fieldInk, 1 - blank);
-    }
-    let color = base;
-    if (r < 1e-9) return color;
-    // cos and sin of k times the angle, for every lobe count, by repeated complex multiplication.
-    const [c1, s1] = [cx / r, cy / r];
-    for (let k = 1; k <= maxLobes; k++) {
-      const [c, s] = powers[k - 1];
-      powers[k] = [c * c1 - s * s1, c * s1 + s * c1];
-    }
-    for (const { radius, amp, lobes, phases, color: lineInk } of rings) {
-      if (Math.abs(r - radius) > amp + half + 1) continue;
-      const [cn, sn] = powers[lobes];
-      let blank = 1;
-      for (const [cp, sp] of phases) {
-        // Distance to the curve: the radial gap, shrunk by how steeply the curve runs across the radius.
-        const wave = sn * cp + cn * sp;
-        const steep = (lobes * amp * (cn * cp - sn * sp)) / r;
-        const d = (r - radius - amp * wave) / Math.sqrt(1 + steep * steep);
-        blank *= 1 - line(d, half);
+      for (const { radius, amp, lobes, phases, color } of rings) {
+        if (Math.abs(r - radius) > amp + half + 1) continue;
+        const cn = powers[2 * lobes];
+        const sn = powers[2 * lobes + 1];
+        // The gap shrinks by at most `most`, so a curve whose radial gap exceeds `reach` misses this sample.
+        const most = (lobes * amp) / r;
+        const reach = (half + step) * Math.sqrt(1 + most * most);
+        let blank = 1;
+        for (let j = 0; j < phases.length; j += 2) {
+          const cp = phases[j];
+          const sp = phases[j + 1];
+          // Distance to the curve: the radial gap, shrunk by how steeply the curve runs across the radius.
+          const gap = r - radius - amp * (sn * cp + cn * sp);
+          if (gap > reach || gap < -reach) continue;
+          const steep = (lobes * amp * (cn * cp - sn * sp)) / r;
+          blank *= 1 - line(gap / Math.sqrt(1 + steep * steep), half);
+        }
+        const t = 1 - blank;
+        cr += (color[0] - cr) * t;
+        cg += (color[1] - cg) * t;
+        cb += (color[2] - cb) * t;
       }
-      color = mix(color, lineInk, 1 - blank);
     }
-    return color;
+    red += cr;
+    green += cg;
+    blue += cb;
   }
 
   const image = ctx.createImageData(width, height);
   const data = image.data;
   for (let y = 0; y < height; y++)
     for (let x = 0; x < width; x++) {
-      const sum: Rgb = [0, 0, 0];
+      red = green = blue = 0;
       for (let j = 0; j < n; j++)
-        for (let i = 0; i < n; i++) {
-          const c = sample(
+        for (let i = 0; i < n; i++)
+          sample(
             x + (i + 0.5) * step - width / 2,
             y + (j + 0.5) * step - height / 2,
             x * n + i,
           );
-          sum[0] += c[0];
-          sum[1] += c[1];
-          sum[2] += c[2];
-        }
       const p = (y * width + x) * 4;
-      data[p] = Math.round(sum[0] / (n * n));
-      data[p + 1] = Math.round(sum[1] / (n * n));
-      data[p + 2] = Math.round(sum[2] / (n * n));
+      data[p] = Math.round(red / (n * n));
+      data[p + 1] = Math.round(green / (n * n));
+      data[p + 2] = Math.round(blue / (n * n));
       data[p + 3] = 255;
     }
   ctx.putImageData(image, 0, 0);
