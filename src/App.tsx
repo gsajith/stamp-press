@@ -13,7 +13,7 @@ export default function App() {
   const [desk, dispatch] = useReducer(deskReducer, EMPTY_DESK, (empty) =>
     deskReducer(empty, { type: "load", ref: pressStampRef() }),
   );
-  // The open stamp's pan and zoom, which the detail view's gestures write and the scene reads every frame.
+  // The open stamp's pan, zoom and tilt, which the detail view's gestures write and the scene reads every frame.
   const [view] = useState<{ current: View }>(() => ({ current: UNMOVED }));
   // The desk refuses a press while too many stamps are still falling. The scene fills the window, so the
   // window's shape sets how much desk a burst can spread over.

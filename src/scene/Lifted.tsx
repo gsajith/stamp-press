@@ -39,11 +39,11 @@ const ease = (t: number) => (t < 0.5 ? 4 * t ** 3 : 1 - (-2 * t + 2) ** 3 / 2);
 
 // The detail view's stamp, in the Canvas: the open stamp, drawn here in place of its desk mesh, lifts from
 // where it lies to float face on in front of the camera, while the desk fades behind it. There it pans, zooms
-// and tilts with `view`, which the detail view's gestures write and this steps the tilt's spring in. Its paper
-// is embossed along the punch, and a light up close puts a sheen on it, unless the visitor prefers reduced
-// motion, which keeps it flat. It lifts with its desk texture while a worker
-// redraws it at DETAIL_TEXTURE, swaps that in when it's ready, and releases it on unmount. `leaving` takes it
-// back down, then `onDown`.
+// and tilts with `view`, which the detail view's gestures write, and this runs the tilt's spring. A visitor
+// who prefers reduced motion gets no tilt. Its paper is embossed along the punch, and a light up close puts a
+// sheen on it that slides across as it tilts. It lifts with its desk texture while a worker redraws it at
+// DETAIL_TEXTURE, swaps that in when it's ready, and releases it on unmount. `leaving` takes it back down,
+// then `onDown`.
 export function Lifted({
   entry,
   placed,

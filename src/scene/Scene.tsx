@@ -56,7 +56,7 @@ function CameraRig({
 
 // The desk in 3D, and a focus ring over each stamp lying on screen, in drop order, so the keyboard and screen
 // readers reach them too. Clicking a stamp or pressing a ring asks to open it with `onOpen`. The open stamp
-// lifts into the detail view, panned and zoomed by `view`, and stays lifted until it has settled back.
+// lifts into the detail view, panned, zoomed and tilted by `view`, and stays lifted until it has settled back.
 export default function Scene({
   desk,
   view,
