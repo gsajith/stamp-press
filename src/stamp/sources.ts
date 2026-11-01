@@ -2,6 +2,7 @@ import { PALETTES_1, type Palette } from "./palettes";
 import { pick, randomSeed, subSeed } from "./random";
 import type { StampRef } from "./ref";
 import { bauhausGrid1 } from "./styles/bauhausGrid";
+import { botanicalLSystem1 } from "./styles/botanicalLSystem";
 import { halftoneObject1 } from "./styles/halftoneObject";
 import { landscapeSilhouette1 } from "./styles/landscapeSilhouette";
 import { pixelSprite1 } from "./styles/pixelSprite";
@@ -53,6 +54,7 @@ export const STYLES: readonly Style[] = [
   pixelSprite1,
   risoOverprint1,
   truchetTiles1,
+  botanicalLSystem1,
   halftoneObject1,
 ];
 
