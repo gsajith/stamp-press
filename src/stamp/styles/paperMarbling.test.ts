@@ -21,11 +21,15 @@ describe("paper marbling 1", () => {
   });
 
   // ADR 0001: a published style's output for a seed never changes. If one of these fails, the style's drawing
-  // changed: restore it, and ship the change as a new style version instead.
+  // changed: restore it, and ship the change as a new style version instead. The seeds cover every punch
+  // aspect and every pattern: nonpareil, chevron, stone, bouquet and gel-git.
   it("draws the same pixels it shipped with", () => {
     expect(sha(pixels(1, 39, 50))).toBe("943344d795fcb53a");
     expect(sha(pixels(2, 50, 39))).toBe("1bd1e7ffe729bc2d");
     expect(sha(pixels(3, 44, 44))).toBe("0dd4828dca59554c");
+    expect(sha(pixels(5, 39, 50))).toBe("715350f993b6048c");
+    expect(sha(pixels(7, 50, 39))).toBe("9e1d3ed1710dd126");
+    expect(sha(pixels(6, 44, 44))).toBe("13eb067d77e4c7cd");
   });
 
   it("draws different art for different seeds", () => {

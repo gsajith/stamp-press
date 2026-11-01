@@ -32,7 +32,8 @@ const clamp01 = (x: number) => (x < 0 ? 0 : x > 1 ? 1 : x);
 const TAU = 6.283185307179586;
 
 // Sine and cosine of `x`, written to `sine` and `cosine`, from one Taylor polynomial, which is the same in every
-// engine, unlike Math.sin. Error under 1e-7, plenty for the drift's direction, its one use.
+// engine, unlike Math.sin. Sine is within 1e-7. Cosine comes from sqrt(1 - sine²), so it strays up to 4e-4 near
+// a quarter turn, plenty for the drift's direction, its one use.
 let sine = 0;
 let cosine = 0;
 function sincos(x: number) {
