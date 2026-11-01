@@ -41,6 +41,22 @@ describe("desk", () => {
     }
   });
 
+  it("drops every rapid press, up to 8 stamps in flight, and refuses the rest", () => {
+    const mash = (n: number, from: number): DeskEvent[] =>
+      Array.from({ length: n }, (_, i) => ({
+        type: "press",
+        ref: ref(from + i),
+      }));
+    // The first-load stamp is still falling, so 7 presses fill the air.
+    const full = run([load, ...mash(7, 200)]);
+    expect(full.stamps).toHaveLength(8);
+    expect(run(mash(3, 300), full)).toBe(full);
+    // A landing frees room for exactly one more.
+    const landed = run([{ type: "land", id: 3 }, ...mash(3, 400)], full);
+    expect(landed.stamps).toHaveLength(9);
+    expect(landed.stamps[8].ref).toEqual(ref(400));
+  });
+
   it("drifts toward open desk instead of piling up", () => {
     const desk = run([load, { type: "land", id: 0 }, ...pressAndLand(60)]);
     // No stamp lands nearer an older stamp than the shortest step, so the trail never heaps in one spot.

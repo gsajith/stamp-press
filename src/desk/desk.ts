@@ -33,6 +33,9 @@ export type DeskEvent =
 
 export const EMPTY_DESK: Desk = { stamps: [] };
 
+// The most stamps that can fall at once. Mashing past it refuses presses until one lands.
+export const MAX_IN_FLIGHT = 8;
+
 // Everything random about a drop comes from the stamp's seed, so the reducer stays pure.
 function dropFor(ref: StampRef, spot: Spot): Drop {
   const r = stream(ref.seed, 0x5bd1e995);
@@ -50,6 +53,7 @@ export function deskReducer(desk: Desk, event: DeskEvent): Desk {
       return { stamps: [stampAt(0, event.ref, [0, 0])] };
     case "press": {
       const { stamps } = desk;
+      if (stamps.filter((s) => !s.landed).length >= MAX_IN_FLIGHT) return desk;
       const trail = stamps.map((s) => s.drop.spot);
       const spot = chooseDropSpot(trail, stream(event.ref.seed, 0x2545f491));
       return { stamps: [...stamps, stampAt(stamps.length, event.ref, spot)] };
