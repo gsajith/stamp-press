@@ -11,7 +11,7 @@ export default function App() {
     deskReducer(empty, { type: "load", ref: pressStampRef() }),
   );
   const button = useRef<HTMLButtonElement>(null);
-  // The desk refuses a press while too many stamps are still falling. The scene fills the window, so the
+  // The desk refuses a press while too many stamps are still in the air. The scene fills the window, so the
   // window's shape sets how much desk a burst can spread over.
   const press = useCallback(
     () =>

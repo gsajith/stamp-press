@@ -1,6 +1,6 @@
 # Stamp press
 
-A 3D toy where each press of a button generates a new postage stamp that falls onto a desk. Visitors can open any stamp to look at it up close, and later keep stamps in an album.
+A 3D toy where each press of a button flings a new postage stamp onto a desk. Visitors can open any stamp to look at it up close, and later keep stamps in an album.
 
 ## Language
 
@@ -49,7 +49,7 @@ _Avoid_: Spam, combo
 ### Places
 
 **Desk**:
-The paper surface stamps fall onto and scatter across.
+The paper surface stamps land on and scatter across.
 _Avoid_: Floor, table, canvas
 
 **Detail view**:
