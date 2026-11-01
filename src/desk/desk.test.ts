@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 import type { StampRef } from "../stamp";
-import { type Desk, deskReducer, type DeskEvent, EMPTY_DESK } from "./desk";
+import {
+  type Desk,
+  deskReducer,
+  type DeskEvent,
+  EMPTY_DESK,
+  isNearFocus,
+} from "./desk";
 
 const ref = (seed: number): StampRef => ({ source: "procedural1", seed });
 const run = (events: DeskEvent[], from: Desk = EMPTY_DESK) =>
@@ -63,5 +69,17 @@ describe("desk", () => {
     for (let i = 2; i < desk.stamps.length; i++)
       for (let j = 0; j < i - 1; j++)
         expect(dist(spotOf(desk, i), spotOf(desk, j))).toBeGreaterThan(0.4);
+  });
+
+  it("stops rendering stamps far from the newest drop, and keeps the ones around it", () => {
+    const desk = run([load, { type: "land", id: 0 }, ...pressAndLand(300)]);
+    const newest = spotOf(desk, desk.stamps.length - 1);
+    const near = desk.stamps.filter((s) => dist(s.drop.spot, newest) < 4);
+    const far = desk.stamps.filter((s) => dist(s.drop.spot, newest) > 12);
+    // The camera frames a few desk units around the newest drop, on a phone or a wide screen.
+    expect(near.length).toBeGreaterThan(5);
+    expect(far.length).toBeGreaterThan(100);
+    for (const s of near) expect(isNearFocus(desk, s)).toBe(true);
+    for (const s of far) expect(isNearFocus(desk, s)).toBe(false);
   });
 });

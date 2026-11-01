@@ -74,3 +74,18 @@ const stampAt = (id: number, ref: StampRef, spot: Spot): DeskStamp => ({
   drop: dropFor(ref, spot),
   landed: false,
 });
+
+// Where the camera heads: the newest drop. Assumes a loaded desk.
+export const focusOf = (desk: Desk): Spot =>
+  desk.stamps[desk.stamps.length - 1].drop.spot;
+
+// The camera frames a few desk units around the newest drop, even backed off on a phone, so stamps further
+// than this from it can't be on screen and stop rendering. The camera only moves on with new drops, so the
+// trail behind it fades out of the scene while staying on the desk.
+const RENDER_RADIUS = 8;
+
+export function isNearFocus(desk: Desk, stamp: DeskStamp): boolean {
+  const [x, z] = focusOf(desk);
+  const [sx, sz] = stamp.drop.spot;
+  return Math.hypot(sx - x, sz - z) <= RENDER_RADIUS;
+}
