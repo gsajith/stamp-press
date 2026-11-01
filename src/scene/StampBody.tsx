@@ -14,12 +14,13 @@ import {
   useRef,
   useState,
 } from "react";
-import { type Camera, type Group, Vector3 } from "three";
+import { type Camera, type Group, type Texture, Vector3 } from "three";
 import type { DeskStamp } from "../desk/desk";
 import { punchGeometry, resolveStamp, type Stamp } from "../stamp";
 import { backoff } from "./camera";
 import { aimFling, DRAG, flightAt, type Vec3 } from "./fling";
-import { stampGeometry, stampTexture, THICKNESS } from "./stampMesh";
+import type { Placed } from "./placed";
+import { deskTexture, stampGeometry, THICKNESS } from "./stampMesh";
 
 // How far in front of the camera a stamp leaves the press, along the line of sight through the button. A
 // phone's camera backs off further, and so does the launch, so a stamp leaves at the same size on screen.
@@ -59,17 +60,24 @@ type Flight = {
 // can only turn about the vertical, so physics lands it art up on whatever lies there. It reports its first
 // touch with `onLand`. Shortly after landing the body is fixed in place, so a pile of thin stamps can't jostle.
 // A stamp that isn't `shown` stays on the desk as a body alone, its mesh and texture released until it comes
-// back into range.
+// back into range. A click on a landed stamp asks to open it with `onOpen`, and while the detail view has it
+// `lifted`, it hides here.
 export const StampBody = memo(function StampBody({
-  entry: { id, ref, drop },
+  entry: { id, ref, drop, landed: settled },
   shown,
+  lifted,
+  placed,
   press,
   onLand,
+  onOpen,
 }: {
   entry: DeskStamp;
   shown: boolean;
+  lifted: boolean;
+  placed: Placed;
   press: RefObject<HTMLElement | null>;
   onLand: (id: number) => void;
+  onOpen: (id: number) => void;
 }) {
   // A press always makes a reference to a known source.
   const stamp = useMemo(() => resolveStamp(ref)!, [ref]);
@@ -78,6 +86,11 @@ export const StampBody = memo(function StampBody({
   const collider = useRef<RapierCollider>(null);
   const art = useRef<Group>(null);
   const { width, height } = punchGeometry(stamp.punch);
+  useEffect(() => {
+    placed.set(id, { body, width, height });
+    return () => void placed.delete(id);
+  }, [placed, id, width, height]);
+  const cursor = useThree((s) => s.gl.domElement.style);
 
   const [p1, p2, w1, w2] = drop.flutter;
   // A stamp waits for its first frame to leave the press, flies on the script, falls under physics near the
@@ -103,7 +116,7 @@ export const StampBody = memo(function StampBody({
       // The mesh shows from the next frame, once it has moved to the launch.
       return;
     }
-    a.visible = true;
+    a.visible = !lifted;
     if (phase.current === "landed") {
       if (!fixed) {
         settling.current += dt;
@@ -200,7 +213,21 @@ export const StampBody = memo(function StampBody({
         args={[width / 2, THICKNESS / 2, height / 2]}
         friction={0.9}
       />
-      <group ref={art} visible={false}>
+      {/* Hidden until the stamp leaves the press. From then on the frame loop shows it unless it's lifted. */}
+      <group
+        ref={art}
+        visible={false}
+        onClick={(e) => {
+          // Only the stamp on top opens.
+          e.stopPropagation();
+          onOpen(id);
+        }}
+        onPointerOver={(e) => {
+          e.stopPropagation();
+          if (settled) cursor.cursor = "pointer";
+        }}
+        onPointerOut={() => (cursor.cursor = "")}
+      >
         {shown && <StampMesh stamp={stamp} />}
       </group>
     </RigidBody>
@@ -237,33 +264,55 @@ function launchPoint(
   return [p.x, p.y, p.z];
 }
 
-// A stamp's punched paper and printed face. Its geometry and texture live only while it's mounted.
-function StampMesh({ stamp }: { stamp: Stamp }) {
+// A stamp's punched paper and printed face, at desk size or with a larger `face` in its place. Its geometry
+// and desk texture live only while it's mounted; `face` belongs to whoever passes it. `onTop` draws it over
+// the whole scene, after the detail view's backdrop, casting no shadow.
+export function StampMesh({
+  stamp,
+  face,
+  onTop = false,
+}: {
+  stamp: Stamp;
+  face?: Texture | null;
+  onTop?: boolean;
+}) {
   const anisotropy = useThree((s) => s.gl.capabilities.getMaxAnisotropy());
   const geometry = useMemo(() => stampGeometry(stamp), [stamp]);
-  const texture = useMemo(() => {
-    const t = stampTexture(stamp);
+  const desk = useMemo(() => {
+    const t = deskTexture(stamp);
     t.anisotropy = anisotropy;
     return t;
   }, [stamp, anisotropy]);
   useEffect(
     () => () => {
       geometry.dispose();
-      texture.dispose();
+      desk.dispose();
     },
-    [geometry, texture],
+    [geometry, desk],
   );
+  // Drawn last, with no depth test, so neither the desk nor the stamps on it can cut into it. Back faces are
+  // culled and the face draws before the cut edge, so it still reads front to back.
+  const top = onTop
+    ? { transparent: true, depthTest: false, depthWrite: false }
+    : {};
   return (
-    <mesh geometry={geometry} castShadow receiveShadow>
+    <mesh
+      geometry={geometry}
+      castShadow={!onTop}
+      receiveShadow={!onTop}
+      renderOrder={onTop ? 2 : 0}
+    >
       <meshStandardMaterial
         attach="material-0"
-        map={texture}
+        map={face ?? desk}
         roughness={0.85}
+        {...top}
       />
       <meshStandardMaterial
         attach="material-1"
         color={stamp.palette.paper}
         roughness={0.9}
+        {...top}
       />
     </mesh>
   );

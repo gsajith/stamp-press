@@ -23,8 +23,13 @@ export type DeskStamp = {
 };
 
 // `focus` is the spot on the desk the camera centers on. `lastPress` is when the last press dropped a stamp,
-// in milliseconds.
-export type Desk = { stamps: DeskStamp[]; focus: Spot; lastPress: number };
+// in milliseconds. `open` is the id of the stamp in the detail view, or null when there's none.
+export type Desk = {
+  stamps: DeskStamp[];
+  focus: Spot;
+  lastPress: number;
+  open: number | null;
+};
 
 // The desk under the screen, as offsets from the camera's center: the four-sided patch a stamp's center can
 // land in and still show whole, given by its far edge (the top of the screen) and its near edge (the bottom),
@@ -32,16 +37,20 @@ export type Desk = { stamps: DeskStamp[]; focus: Spot; lastPress: number };
 export type Area = { far: [Spot, Spot]; near: [Spot, Spot] };
 
 // Load drops the page's first stamp. Press drops another, carrying its fresh reference, the time in
-// milliseconds, and the visible area. The scene sends land when a stamp first touches down.
+// milliseconds, and the visible area. The scene sends land when a stamp first touches down. Open lifts a
+// stamp into the detail view, and close puts it back.
 export type DeskEvent =
   | { type: "load"; ref: StampRef }
   | { type: "press"; ref: StampRef; at: number; area: Area }
-  | { type: "land"; id: number };
+  | { type: "land"; id: number }
+  | { type: "open"; id: number }
+  | { type: "close" };
 
 export const EMPTY_DESK: Desk = {
   stamps: [],
   focus: [0, 0],
   lastPress: -Infinity,
+  open: null,
 };
 
 // The most stamps that can be in the air at once. Mashing past it refuses presses until one lands.
@@ -66,6 +75,8 @@ export function deskReducer(desk: Desk, event: DeskEvent): Desk {
       return { ...EMPTY_DESK, stamps: [stampAt(0, event.ref, [0, 0])] };
     case "press": {
       const { stamps, focus } = desk;
+      // The detail view holds the press: the desk under it stays as the visitor left it.
+      if (desk.open !== null) return desk;
       const inFlight = stamps.filter((s) => !s.landed).length;
       if (inFlight >= MAX_IN_FLIGHT) return desk;
       const spots = stamps.map((s) => s.drop.spot);
@@ -77,6 +88,7 @@ export function deskReducer(desk: Desk, event: DeskEvent): Desk {
         ? chooseBurstSpot(spots, focus, event.area, rand)
         : chooseDropSpot(spots, rand);
       return {
+        ...desk,
         stamps: [...stamps, stampAt(stamps.length, event.ref, spot)],
         focus: burst ? focus : spot,
         lastPress: event.at,
@@ -89,6 +101,12 @@ export function deskReducer(desk: Desk, event: DeskEvent): Desk {
       stamps[event.id] = { ...stamp, landed: true };
       return { ...desk, stamps };
     }
+    case "open":
+      // Only a stamp lying on the desk lifts, and only one at a time.
+      if (desk.open !== null || !desk.stamps[event.id]?.landed) return desk;
+      return { ...desk, open: event.id };
+    case "close":
+      return desk.open === null ? desk : { ...desk, open: null };
   }
 }
 

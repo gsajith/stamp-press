@@ -136,6 +136,40 @@ describe("desk", () => {
     });
   });
 
+  describe("the detail view", () => {
+    const open = (id: number): DeskEvent => ({ type: "open", id });
+    const close: DeskEvent = { type: "close" };
+    const settled = run([load, land(0), ...pressAndLand(3)]);
+
+    it("opens a landed stamp, one at a time", () => {
+      const desk = run([open(2)], settled);
+      expect(desk.open).toBe(2);
+      expect(run([open(1)], desk).open).toBe(2);
+    });
+
+    it("won't open a stamp that is still falling, or one that isn't on the desk", () => {
+      const falling = run([press(500, 20_000)], settled);
+      expect(run([open(4)], falling)).toBe(falling);
+      expect(run([open(9)], settled)).toBe(settled);
+    });
+
+    it("refuses presses while a stamp is open", () => {
+      const desk = run([open(2)], settled);
+      expect(run([press(501, 20_000)], desk)).toBe(desk);
+    });
+
+    it("closes back to the same desk, with the camera where it was", () => {
+      const desk = run([open(2), close], settled);
+      expect(desk.open).toBeNull();
+      expect(desk.stamps).toBe(settled.stamps);
+      expect(desk.focus).toEqual(settled.focus);
+    });
+
+    it("starts with no stamp open", () => {
+      expect(run([load]).open).toBeNull();
+    });
+  });
+
   it("stops rendering stamps far from the camera's center, and keeps the ones around it", () => {
     const desk = run([load, land(0), ...pressAndLand(300)]);
     const near = desk.stamps.filter((s) => dist(s.drop.spot, desk.focus) < 4);
