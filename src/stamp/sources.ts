@@ -9,6 +9,7 @@ import { crossStitch1 } from "./styles/crossStitch";
 import { escherTessellation1 } from "./styles/escherTessellation";
 import { fishDrawing1 } from "./styles/fishDrawing";
 import { fantasyMap1 } from "./styles/fantasyMap";
+import { fairIsle1 } from "./styles/fairIsle";
 import { flowLines1 } from "./styles/flowLines";
 import { girih1 } from "./styles/girih";
 import { grownTree1 } from "./styles/grownTree";
@@ -129,6 +130,7 @@ export const NEW_STYLES: readonly Style[] = [
   hatMonotile1,
   grownTree1,
   spirograph1,
+  fairIsle1,
   isometricBlocks1,
 ];
 
