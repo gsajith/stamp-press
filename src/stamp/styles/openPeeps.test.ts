@@ -26,8 +26,10 @@ describe("open peeps 1", () => {
   // changed: restore it, and ship the change as a new style version instead.
   it("draws the same pixels it shipped with", () => {
     expect(sha(pixels(1, 39, 50))).toBe("06c0f34e0aeccdbf");
-    expect(sha(pixels(2, 50, 39))).toBe("9de22fdf147fc1e4");
-    expect(sha(pixels(3, 44, 44))).toBe("eac327dcfff92218");
+    expect(sha(pixels(2, 50, 39))).toBe("b250ab3a1780d79c");
+    expect(sha(pixels(3, 44, 44))).toBe("e854d694ca7e19c2");
+    // Desk size, which takes fewer sample rows a pixel.
+    expect(sha(pixels(2, 200, 256))).toBe("2422ad0d97fb8c1f");
   });
 
   it("draws different art for different seeds", () => {

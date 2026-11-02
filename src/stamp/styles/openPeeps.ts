@@ -496,15 +496,17 @@ function draw(
   part(glasses, AT.glasses);
 
   if (oval) {
-    // A solid surround with an oval cut through it, then an ink rule around the cut.
+    // A solid surround with an oval cut through it, then an ink rule around the cut. The surround stops in the
+    // middle of the rule, so the rule covers its edge and none of its color bleeds inside the oval.
     const [cx, cy, rx, ry] = [width / 2, height / 2, ww / 2, wh / 2];
     const rule = short * 0.012;
     const frame = [0, 0, width, 0, width, height, 0, height];
+    const cut = ellipse(cx, cy, rx + rule / 2, ry + rule / 2);
     fill(
       data,
       width,
       height,
-      shape([frame, ellipse(cx, cy, rx, ry)], true, 1, 0, 0),
+      shape([frame, cut], true, 1, 0, 0),
       surround,
       rows,
     );
