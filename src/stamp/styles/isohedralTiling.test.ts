@@ -2,7 +2,13 @@ import { createHash } from "node:crypto";
 import { createCanvas } from "@napi-rs/canvas";
 import { describe, expect, it } from "vitest";
 import { drawArt, NEW_STYLES, resolveStamp } from "..";
-import { layOut, makeTiling, prototile, type Spot } from "./isohedralTiling";
+import {
+  hasNoCusps,
+  layOut,
+  makeTiling,
+  prototile,
+  type Spot,
+} from "./isohedralTiling";
 import { TILING_TYPES } from "./isohedralTypes";
 
 // Draws a stamp's art in Node and returns its RGBA pixels.
@@ -27,7 +33,7 @@ describe("isohedral tiling 1", () => {
   it("draws the same pixels it shipped with", () => {
     expect(sha(pixels(1, 39, 50))).toBe("cb5e5fba2e28a4fd");
     expect(sha(pixels(2, 50, 39))).toBe("1e0a1f560bcc0082");
-    expect(sha(pixels(3, 44, 44))).toBe("dc8ce23537f3f4f0");
+    expect(sha(pixels(3, 44, 44))).toBe("cb6861b0e5e5ba47");
     // Large enough not to be supersampled, as at desk size and in the detail view.
     expect(sha(pixels(7, 160, 200))).toBe("10c4635ec359bd4f");
   });
@@ -75,6 +81,8 @@ describe("the tiling types", () => {
       const outline = prototile(tiling, []);
       const layout = layOut(tiling, outline, 0.01)!;
       expect(layout).not.toBeNull();
+      // Bent edges are checked for cusps. Straight ones, the fallback, never have them.
+      expect(hasNoCusps(tiling, [])).toBe(true);
       const [a, b]: Spot[] = [
         { colour: 0, distance: 0 },
         { colour: 0, distance: 0 },

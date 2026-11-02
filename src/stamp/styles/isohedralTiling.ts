@@ -175,26 +175,73 @@ export function randomControls(
 // Straight segments per curved edge: enough that no facet shows at 2048 px.
 const CURVE_STEPS = 24;
 
+// The point a fraction `s` along tiling edge `k`, from vertex k toward vertex k + 1, drawn with its shape's
+// controls.
+function edgePoint(
+  tiling: Tiling,
+  controls: Controls,
+  k: number,
+  s: number,
+): Vec {
+  const { T, id, rev } = tiling.edges[k];
+  // A reversed edge runs the same curve from (1, 0) back to (0, 0).
+  const t = rev ? 1 - s : s;
+  const c = controls[id];
+  if (!c) return apply(T, [t, 0]);
+  const [[ax, ay], [bx, by]] = c;
+  const u = 1 - t;
+  const [w1, w2, w3] = [3 * u * u * t, 3 * u * t * t, t * t * t];
+  return apply(T, [w1 * ax + w2 * bx + w3, w1 * ay + w2 * by]);
+}
+
 // The prototile's outline, as a closed polygon from vertex 0, each edge drawn with its shape's controls.
 export function prototile(tiling: Tiling, controls: Controls): Vec[] {
   const out: Vec[] = [tiling.vertices[0]];
-  for (const { T, id, rev } of tiling.edges) {
-    const c = controls[id];
-    if (!c) {
-      out.push(apply(T, rev ? [0, 0] : [1, 0]));
-      continue;
-    }
-    const [[ax, ay], [bx, by]] = c;
-    for (let k = 1; k <= CURVE_STEPS; k++) {
-      // A reversed edge runs the same curve from (1, 0) back to (0, 0).
-      const t = rev ? 1 - k / CURVE_STEPS : k / CURVE_STEPS;
-      const u = 1 - t;
-      const [w1, w2, w3] = [3 * u * u * t, 3 * u * t * t, t * t * t];
-      out.push(apply(T, [w1 * ax + w2 * bx + w3, w1 * ay + w2 * by]));
-    }
-  }
+  tiling.edges.forEach(({ id }, k) => {
+    const steps = controls[id] ? CURVE_STEPS : 1;
+    for (let n = 1; n <= steps; n++)
+      out.push(edgePoint(tiling, controls, k, n / steps));
+  });
   out.pop(); // back at vertex 0
   return out;
+}
+
+// cos 15 degrees. Straight tiles' corners are 30 degrees or more, but bent edges can leave a tiling vertex
+// almost along each other, and the sliver of tile between them prints as a dark smudge at desk size.
+const COS_SHARPEST = 0.9659258262890683;
+
+// Whether every corner of the prototile is wider than 15 degrees, measured along chords 2% and 10% of the way
+// down each edge, so a curve that hooks back right at the corner, or a little after it, counts. Every tile is
+// a copy of the prototile, so this covers every corner in the tiling.
+export function hasNoCusps(tiling: Tiling, controls: Controls): boolean {
+  const n = tiling.edges.length;
+  // Twice the outline's signed area, for which way round the corners turn.
+  let turn = 0;
+  for (let k = 0; k < n; k++) {
+    const [[ax, ay], [bx, by]] = [
+      tiling.vertices[k],
+      tiling.vertices[(k + 1) % n],
+    ];
+    turn += ax * by - ay * bx;
+  }
+  for (let k = 0; k < n; k++)
+    for (const s of [0.02, 0.1]) {
+      const [vx, vy] = tiling.vertices[k];
+      const [nx, ny] = edgePoint(tiling, controls, k, s);
+      const [px, py] = edgePoint(tiling, controls, (k + n - 1) % n, 1 - s);
+      const [ax, ay, bx, by] = [nx - vx, ny - vy, px - vx, py - vy];
+      const cross = ax * by - ay * bx;
+      const dot = ax * bx + ay * by;
+      // The inside angle runs from the next edge round to the previous one: it's sharp when they point nearly
+      // the same way and the inside lies between them.
+      if (
+        cross * turn >= 0 &&
+        dot >
+          COS_SHARPEST * Math.sqrt((ax * ax + ay * ay) * (bx * bx + by * by))
+      )
+        return false;
+    }
+  return true;
 }
 
 // Whether two segments cross at a single point inside both. Touching at an end doesn't count.
@@ -523,14 +570,14 @@ function draw(
   // Distances matter out to the outline plus the largest sample, whatever the draw's size.
   const margin = line / 2 + span / MIN_UNIT;
 
-  // Bent edges, redrawn when they make a tile cross itself or overlap a neighbor, and bent less each time.
+  // Bent edges, redrawn when they make a tile cross itself, pinch a corner to a cusp or overlap a neighbor,
+  // and bent less each time.
   let layout: ReturnType<typeof layOut> = null;
   for (let n = 0; n < TRIES && !layout; n++) {
-    const outline = prototile(
-      tiling,
-      randomControls(tiling, rand, 1 - n / TRIES),
-    );
-    if (isSimple(outline)) layout = layOut(tiling, outline, margin);
+    const controls = randomControls(tiling, rand, 1 - n / TRIES);
+    const outline = prototile(tiling, controls);
+    if (isSimple(outline) && hasNoCusps(tiling, controls))
+      layout = layOut(tiling, outline, margin);
   }
   layout ??= layOut(tiling, prototile(tiling, []), margin)!;
 
