@@ -37,8 +37,9 @@ import type { Style } from "../sources";
 // isomer paints whole faces back to front on a canvas, stroking each in its own color to hide the seams. Here
 // every pixel is computed in our code so it matches in every browser and Node (ADR 0001): each sample row
 // finds every face's span, the nearest face along the view owns each stretch of the row, and each pixel takes
-// the exact width of every stretch across it. Faces never bleed into each other, and nothing depends on the
-// order the shapes were added.
+// the exact width of every stretch across it. The nearest face is judged at each stretch's middle, so solids
+// may touch but never overlap: two faces that cross would swap order inside a stretch. Every plan below keeps
+// its solids apart, and then faces never bleed into each other and the order shapes were added doesn't matter.
 
 type Vec = [number, number, number];
 type Rgb = [number, number, number];
@@ -204,11 +205,11 @@ function castle(s: Scene, rand: () => number, inks: Inks, tall: boolean) {
   const d = int(rand, 3, 5);
   const h = tall ? 2 : int(rand, 1, 2);
   s.prism(1, 0, 0, w, d, h, inks.body);
-  // The lower wing on the left, with stairs from the ground.
+  // The lower wing on the left, with stairs from the ground that end at its front.
   s.prism(0, 1, 0, 1, d - 1, h / 2, inks.trim);
-  s.stairs(0, 0, 0, 1, h / 2, false, inks.trim);
-  // Stairs from the wing up to the block's roof, climbing toward +x along the wing's back.
-  s.stairs(0, d - 1, h / 2, 1, h / 2, true, inks.trim);
+  s.stairs(0, 1 - h / 2, 0, 1, h / 2, false, inks.trim);
+  // Stairs from the wing up to the block's roof, climbing toward +x along the wing's back to the block's side.
+  s.stairs(1 - h / 2, d - 1, h / 2, 1, h / 2, true, inks.trim);
   // The tier, set back one unit, and stairs up to it on the front.
   const tw = w - 1;
   const td = d - 1;
@@ -234,9 +235,9 @@ function castle(s: Scene, rand: () => number, inks: Inks, tall: boolean) {
       inks.roofs[i % inks.roofs.length],
     ),
   );
-  // isomer's dark plinth in the middle of the roof, with a block on it.
+  // isomer's dark plinth in the middle of the tier, with a block on it.
   if (rand() < 0.6) {
-    const [cx, cy] = [1 + w / 2, d / 2 + 0.5];
+    const [cx, cy] = [1.5 + w / 2, d / 2 + 0.5];
     s.prism(cx - 0.5, cy - 0.5, top, 1, 1, 0.2, inks.trim);
     s.prism(cx - 0.3, cy - 0.3, top + 0.2, 0.6, 0.6, 0.6, inks.roofs[0]);
   }
@@ -311,14 +312,18 @@ function slab(s: Scene, rand: () => number, inks: Inks, tall: boolean) {
   );
   const sw = w - 2;
   const sh = tall ? int(rand, 4, 6) : int(rand, 2, 4);
-  s.prism(0.5, d - 1.5, 0.5, sw, 1, sh, inks.body);
-  // Floors: thin bands across the slab's faces, as a ledge every unit.
-  for (let z = 1; z < sh; z++)
-    s.prism(0.4, d - 1.6, 0.5 + z - 0.08, sw + 0.2, 1.2, 0.08, inks.trim);
+  // The slab, a storey per unit. Each storey but the top ends in a ledge, a thin band a little wider than the
+  // slab, so the solids stack without overlapping.
+  for (let z = 0; z < sh; z++) {
+    const last = z === sh - 1;
+    s.prism(0.5, d - 1.5, 0.5 + z, sw, 1, last ? 1 : 0.92, inks.body);
+    if (!last) s.prism(0.4, d - 1.6, 1.42 + z, sw + 0.2, 1.2, 0.08, inks.trim);
+  }
   s.prism(1, d - 1.25, 0.5 + sh, sw - 1, 0.5, 0.4, inks.trim);
+  // The pavilion stands in front of the slab, clear of its ledges.
   const px = w - 1.5;
-  s.prism(px, 0.5, 0.5, 1, 1, 1, inks.body);
-  s.pyramid(px, 0.5, 1.5, 1, 1, 0.7, inks.roofs[0]);
+  s.prism(px, 0.25, 0.5, 1, 1, 1, inks.body);
+  s.pyramid(px, 0.25, 1.5, 1, 1, 0.7, inks.roofs[0]);
 }
 
 // A hamlet: houses with pyramid roofs on a shared platform, a stair up its front.
