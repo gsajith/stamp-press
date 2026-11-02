@@ -11,6 +11,7 @@ export {
   type Colors,
   type Style,
 } from "./sources";
+export { type Credit, STYLE_CREDITS } from "./credits";
 export { PALETTES_1, PALETTES_WADA, type Palette } from "./palettes";
 export { randomSeed, stream } from "./random";
 export {

@@ -42,6 +42,41 @@
   stroke-width: 2;
   stroke-linecap: round;
 }
+/* A museum label for a ported style: which project it comes from, and who made it. */
+.detail__credits {
+  position: absolute;
+  top: max(16px, env(safe-area-inset-top));
+  left: max(16px, env(safe-area-inset-left));
+  max-width: min(320px, calc(100vw - 104px));
+  margin: 0;
+  padding: 10px 14px;
+  list-style: none;
+  border-radius: 12px;
+  background: rgb(248 244 236 / 0.86);
+  color: #5c564e;
+  font-size: 14px;
+  line-height: 1.45;
+  box-shadow: 0 2px 10px rgb(35 32 28 / 0.08);
+  animation: detail-in 200ms ease-out 250ms both;
+}
+.detail__credits a {
+  color: #23201c;
+  font-weight: 600;
+  text-decoration: underline;
+  text-decoration-color: rgb(35 32 28 / 0.3);
+  text-underline-offset: 2px;
+}
+.detail__credits svg {
+  width: 13px;
+  height: 13px;
+  margin-right: 5px;
+  vertical-align: -1px;
+  fill: currentColor;
+}
+.detail__credits a:hover {
+  text-decoration-color: currentColor;
+}
+
 /* Matches the desk's press button, in the same spot. */
 .detail__copy {
   position: absolute;
@@ -69,14 +104,16 @@
 }
 
 .detail__close:focus-visible,
-.detail__copy:focus-visible {
+.detail__copy:focus-visible,
+.detail__credits a:focus-visible {
   outline: 3px solid #23201c;
   outline-offset: 3px;
 }
 
 @media (prefers-reduced-motion: reduce) {
   .detail__close,
-  .detail__copy {
+  .detail__copy,
+  .detail__credits {
     animation: none;
   }
 }
