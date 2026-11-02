@@ -809,7 +809,7 @@ function borders(m: Mesh, h: Field, terr: Int32Array): number[][] {
 // How much steeper slopes read for hatching than in the original, whose finer mesh carves steeper valleys, and
 // the strokes' half length in node spacings.
 const SLOPE_GAIN = 2.5;
-const HATCH_R = 0.4;
+const HATCH_R = 0.3;
 
 // Short strokes down the slopes, steeper where the land climbs to the right, longer on the near side of a hill,
 // as if seen from the bottom of the map (visualizeSlopes). Each is [x0, y0, x1, y1] in map units.

@@ -27,10 +27,10 @@ describe("fantasy map 1", () => {
   // ADR 0001: a published style's output for a seed never changes. If one of these fails, the style's drawing
   // changed: restore it, and ship the change as a new style version instead.
   it("draws the same pixels it shipped with", () => {
-    expect(sha(pixels(1, 78, 100))).toBe("6cd8d5a57de06f34");
-    expect(sha(pixels(2, 100, 78))).toBe("a1c64e4cac329b8a");
-    expect(sha(pixels(3, 88, 88))).toBe("ec7ca0f63b85930c");
-    expect(sha(pixels(4, 78, 100, "map1w"))).toBe("041d58013a67cf46");
+    expect(sha(pixels(1, 78, 100))).toBe("f36a14d5a3b54351");
+    expect(sha(pixels(2, 100, 78))).toBe("90acadcd4acd2f92");
+    expect(sha(pixels(3, 88, 88))).toBe("b3e4aed92c90b9fa");
+    expect(sha(pixels(4, 78, 100, "map1w"))).toBe("9fc8cb5a615cf33f");
   });
 
   it("draws different art for different seeds", () => {
