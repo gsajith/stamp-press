@@ -11,8 +11,10 @@ import { fishDrawing1 } from "./styles/fishDrawing";
 import { fantasyMap1 } from "./styles/fantasyMap";
 import { flowLines1 } from "./styles/flowLines";
 import { girih1 } from "./styles/girih";
+import { grownTree1 } from "./styles/grownTree";
 import { guillocheRosette1 } from "./styles/guillocheRosette";
 import { halftoneObject1 } from "./styles/halftoneObject";
+import { hatMonotile1 } from "./styles/hatMonotile";
 import { inkLandscape1 } from "./styles/inkLandscape";
 import { islandSurvey1 } from "./styles/islandSurvey";
 import { isohedralTiling1 } from "./styles/isohedralTiling";
@@ -30,6 +32,7 @@ import { pixelSprite1 } from "./styles/pixelSprite";
 import { plotterHomage1 } from "./styles/plotterHomage";
 import { polygonTiling1 } from "./styles/polygonTiling";
 import { quiltBlocks1 } from "./styles/quiltBlocks";
+import { reactionDiffusion1 } from "./styles/reactionDiffusion";
 import { risoOverprint1 } from "./styles/risoOverprint";
 import { sandLines1 } from "./styles/sandLines";
 import { seashell1 } from "./styles/seashell";
@@ -121,6 +124,9 @@ export const NEW_STYLES: readonly Style[] = [
   isohedralTiling1,
   fantasyMap1,
   sandLines1,
+  reactionDiffusion1,
+  hatMonotile1,
+  grownTree1,
   polygonTiling1,
 ];
 
