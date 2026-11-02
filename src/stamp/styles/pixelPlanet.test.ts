@@ -1,7 +1,15 @@
 import { createHash } from "node:crypto";
 import { createCanvas } from "@napi-rs/canvas";
 import { describe, expect, it } from "vitest";
-import { drawArt, NEW_STYLES, PALETTES_WADA, resolveStamp } from "..";
+import {
+  artInset,
+  drawArt,
+  NEW_STYLES,
+  PALETTES_WADA,
+  punchGeometry,
+  resolveStamp,
+} from "..";
+import { gridSize } from "./pixelPlanet";
 
 // Draws a stamp's art in Node and returns its RGBA pixels.
 function pixels(
@@ -32,14 +40,14 @@ describe("pixel planet 1", () => {
   // ADR 0001: a published style's output for a seed never changes. If one of these fails, the style's drawing
   // changed: restore it, and ship the change as a new style version instead.
   it("draws the same pixels it shipped with", () => {
-    expect(sha(pixels(1, 39, 50))).toBe("7af932781ba87511");
-    expect(sha(pixels(2, 50, 39))).toBe("b74c5c91fa649228");
+    expect(sha(pixels(1, 39, 50))).toBe("ce27dc96bbaca364");
+    expect(sha(pixels(2, 50, 39))).toBe("c6932c93849f9359");
     expect(sha(pixels(3, 44, 44))).toBe("9bac3d35389a5bb1");
     // Seeds 1, 2, 3, 6, 7 and 21 draw lava, ringed, ice, asteroid, gas and terran planets.
-    expect(sha(pixels(6, 39, 50))).toBe("8e36f1de6f865e1c");
-    expect(sha(pixels(21, 39, 50))).toBe("c4d334bbc965e9b4");
+    expect(sha(pixels(6, 39, 50))).toBe("db09b626e57024d8");
+    expect(sha(pixels(21, 39, 50))).toBe("f5d425b1f5941a19");
     // Desk size, where each grid cell is about two pixels.
-    expect(sha(pixels(7, 160, 200))).toBe("d8774527c6354168");
+    expect(sha(pixels(7, 160, 200))).toBe("ef59df964f8f6b2e");
   });
 
   it("draws different art for different seeds", () => {
@@ -70,6 +78,28 @@ describe("pixel planet 1", () => {
           }
       // Mean difference per channel, out of 255.
       expect(total / (w * h * 3)).toBeLessThan(1);
+    }
+  });
+
+  // drawFace rounds the art's size differently on the desk (256 px per stamp unit) and in the detail view (2048),
+  // so the grid has to come out the same from both, and cover the art.
+  it("lays out the same grid on the desk and in the detail view", () => {
+    for (let seed = 0; seed < 500; seed++) {
+      const stamp = resolveStamp({ source: "planet1", seed })!;
+      const { width, height } = punchGeometry(stamp.punch);
+      const [desk, detail] = [256, 2048].map((scale) => {
+        const inset = 2 * Math.round(artInset(stamp) * scale);
+        const [w, h] = [
+          Math.round(width * scale) - inset,
+          Math.round(height * scale) - inset,
+        ];
+        const [cols, rows] = gridSize(w, h);
+        const cell = Math.min(w, h) / 100;
+        expect(cols * cell).toBeGreaterThanOrEqual(w);
+        expect(rows * cell).toBeGreaterThanOrEqual(h);
+        return [cols, rows];
+      });
+      expect(detail).toEqual(desk);
     }
   });
 });

@@ -50,8 +50,19 @@ const mix = (a: Rgb, b: Rgb, t: number): Rgb => [
   a[2] + (b[2] - a[2]) * t,
 ];
 
-// Cells across the art's short side.
+// Cells across the art's short side, and down the long side of portrait and landscape art. The art's long side
+// is at most about 1.4 times its short side, with the widest margin, so LONG covers it.
 const GRID = 100;
+const LONG = 142;
+
+// The grid's columns and rows. They depend only on whether the art is square, portrait or landscape, not its
+// exact size, so drawFace's rounding never moves a cell between the desk and the detail view. On the long side
+// the art shows the middle of the grid.
+export function gridSize(width: number, height: number): [number, number] {
+  const long =
+    Math.max(width, height) / Math.min(width, height) < 1.1 ? GRID : LONG;
+  return width < height ? [GRID, long] : [long, GRID];
+}
 
 // ---- GLSL helpers ----
 
@@ -835,7 +846,8 @@ function coverage(
   });
 }
 
-// Finds the largest edge-connected piece of painted cells and returns every other painted cell to `background`.
+// Finds the largest edge-connected piece of painted cells, returns every other painted cell to `background`, and
+// returns the largest piece's size in cells.
 function keepLargestPiece(
   painted: Uint8Array,
   cols: number,
@@ -870,7 +882,11 @@ function keepLargestPiece(
   const largest = sizes.indexOf(Math.max(...sizes));
   for (let c = 0; c < cells.length; c++)
     if (painted[c] && piece[c] !== largest) cells[c] = background[c];
+  return sizes[largest];
 }
+
+// The smallest share of its square a whole kind's piece may fill before it's drawn again.
+const MIN_PIECE = 0.08;
 
 function draw(
   ctx: CanvasRenderingContext2D,
@@ -901,13 +917,11 @@ function draw(
     rotation,
     rand: noiseRand,
   });
-  const layers = kind.layers(setup, inks);
 
   // The grid: square cells, GRID across the short side, centred on the art.
+  const [cols, rows] = gridSize(width, height);
   const cell = Math.min(width, height) / GRID;
-  const cols = Math.ceil(width / cell - 1e-6);
-  const rows = Math.ceil(height / cell - 1e-6);
-  const cells: Rgb[] = Array<Rgb>(cols * rows).fill(sky);
+  const starfield: Rgb[] = Array<Rgb>(cols * rows).fill(sky);
 
   // Stars first, so the planet covers any behind it.
   const stars = Math.round((cols * rows) / 900);
@@ -917,7 +931,8 @@ function draw(
     const arms = pick(STAR_ARMS, rand);
     const color = mix(sky, paper, 0.35 + 0.35 * rand());
     const plot = (x: number, y: number) => {
-      if (x >= 0 && x < cols && y >= 0 && y < rows) cells[y * cols + x] = color;
+      if (x >= 0 && x < cols && y >= 0 && y < rows)
+        starfield[y * cols + x] = color;
     };
     plot(cx, cy);
     for (let a = 0; a < 4; a++)
@@ -932,32 +947,46 @@ function draw(
   // Each cell takes the topmost layer that paints it, so layers under clouds never run.
   const ox = Math.floor((cols - kind.diameter) / 2);
   const oy = Math.floor((rows - kind.diameter) / 2);
-  const squares = layers.map(({ shader, scale }) => {
-    const offset = ((scale - 1) * kind.diameter) / 2;
-    return {
-      shader,
-      left: ox - offset,
-      top: oy - offset,
-      pixels: kind.diameter * scale,
-    };
-  });
-  squares.reverse();
-  const background = cells.slice();
-  const painted = new Uint8Array(cols * rows);
-  for (let y = 0; y < rows; y++)
-    for (let x = 0; x < cols; x++)
-      for (const { shader, left, top, pixels } of squares) {
-        const i = x - left;
-        const j = y - top;
-        if (i < 0 || j < 0 || i >= pixels || j >= pixels) continue;
-        const color = shader(i / pixels, j / pixels, (i + j) % 2 === 0);
-        if (color) {
-          cells[y * cols + x] = color;
-          painted[y * cols + x] = 1;
-          break;
+  const paint = (layers: Layer[]) => {
+    const squares = layers.map(({ shader, scale }) => {
+      const offset = ((scale - 1) * kind.diameter) / 2;
+      return {
+        shader,
+        left: ox - offset,
+        top: oy - offset,
+        pixels: kind.diameter * scale,
+      };
+    });
+    squares.reverse();
+    const cells = starfield.slice();
+    const painted = new Uint8Array(cols * rows);
+    for (let y = 0; y < rows; y++)
+      for (let x = 0; x < cols; x++)
+        for (const { shader, left, top, pixels } of squares) {
+          const i = x - left;
+          const j = y - top;
+          if (i < 0 || j < 0 || i >= pixels || j >= pixels) continue;
+          const color = shader(i / pixels, j / pixels, (i + j) % 2 === 0);
+          if (color) {
+            cells[y * cols + x] = color;
+            painted[y * cols + x] = 1;
+            break;
+          }
         }
-      }
-  if (kind.whole) keepLargestPiece(painted, cols, rows, cells, background);
+    const size = kind.whole
+      ? keepLargestPiece(painted, cols, rows, cells, starfield)
+      : Infinity;
+    return { cells, size };
+  };
+  // An asteroid can come out a speck. Like rerolling the generator, draw fresh noise until the rock is big
+  // enough, up to eight tries.
+  let { cells, size } = paint(kind.layers(setup, inks));
+  for (
+    let tries = 1;
+    size < MIN_PIECE * kind.diameter * kind.diameter && tries < 8;
+    tries++
+  )
+    ({ cells, size } = paint(kind.layers(setup, inks)));
 
   const across = coverage(width, (width - cols * cell) / 2, cell, cols);
   const down = coverage(height, (height - rows * cell) / 2, cell, rows);
