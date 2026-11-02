@@ -4,11 +4,13 @@ import type { StampRef } from "./ref";
 import { apparatus1 } from "./styles/apparatus";
 import { bauhausGrid1 } from "./styles/bauhausGrid";
 import { botanicalLSystem1 } from "./styles/botanicalLSystem";
+import { coatOfArms1 } from "./styles/coatOfArms";
 import { contourBands1 } from "./styles/contourBands";
 import { crossStitch1 } from "./styles/crossStitch";
 import { escherTessellation1 } from "./styles/escherTessellation";
 import { fishDrawing1 } from "./styles/fishDrawing";
 import { fantasyMap1 } from "./styles/fantasyMap";
+import { fairIsle1 } from "./styles/fairIsle";
 import { flowLines1 } from "./styles/flowLines";
 import { fracture1 } from "./styles/fracture";
 import { girih1 } from "./styles/girih";
@@ -19,6 +21,7 @@ import { hatMonotile1 } from "./styles/hatMonotile";
 import { inkLandscape1 } from "./styles/inkLandscape";
 import { islandSurvey1 } from "./styles/islandSurvey";
 import { isohedralTiling1 } from "./styles/isohedralTiling";
+import { isometricBlocks1 } from "./styles/isometricBlocks";
 import { landscapeSilhouette1 } from "./styles/landscapeSilhouette";
 import { linocut1 } from "./styles/linocut";
 import { mathMarbling2 } from "./styles/mathMarbling";
@@ -31,12 +34,14 @@ import { philatelicError1 } from "./styles/philatelicError";
 import { pixelPlanet1 } from "./styles/pixelPlanet";
 import { pixelSprite1 } from "./styles/pixelSprite";
 import { plotterHomage1 } from "./styles/plotterHomage";
+import { polygonTiling1 } from "./styles/polygonTiling";
 import { quiltBlocks1 } from "./styles/quiltBlocks";
 import { reactionDiffusion1 } from "./styles/reactionDiffusion";
 import { risoOverprint1 } from "./styles/risoOverprint";
 import { sandLines1 } from "./styles/sandLines";
 import { seashell1 } from "./styles/seashell";
 import { skyChart1 } from "./styles/skyChart";
+import { spirograph1 } from "./styles/spirograph";
 import { specimenDrawer1 } from "./styles/specimenDrawer";
 import { steelEngraving1 } from "./styles/steelEngraving";
 import { truchetTiles1 } from "./styles/truchetTiles";
@@ -127,6 +132,11 @@ export const NEW_STYLES: readonly Style[] = [
   reactionDiffusion1,
   hatMonotile1,
   grownTree1,
+  spirograph1,
+  fairIsle1,
+  isometricBlocks1,
+  coatOfArms1,
+  polygonTiling1,
   fracture1,
 ];
 
