@@ -66,10 +66,11 @@ function draw(
   const span = 1 + 0.7 * rand();
   const persistence = 0.25 + 0.15 * rand();
   // Each octave reads its own patch of the field, as the original reads its own slice of 3D noise.
-  const offsets = Array.from({ length: OCTAVES }, () => [
-    256 * rand(),
-    256 * rand(),
-  ]);
+  // Flat arrays, read by index: field() runs for every grid node, so it stays free of iterators.
+  const ox = new Float64Array(OCTAVES);
+  const oy = new Float64Array(OCTAVES);
+  for (let k = 0; k < OCTAVES; k++)
+    [ox[k], oy[k]] = [256 * rand(), 256 * rand()];
   // The original's height at (u, v), in short-side units from the art's center: octaves summed and divided by
   // their total amplitude.
   const field = (u: number, v: number) => {
@@ -77,8 +78,8 @@ function draw(
     let total = 0;
     let amp = 1;
     let freq = span;
-    for (const [ox, oy] of offsets) {
-      sum += amp * noise(u * freq + ox, v * freq + oy);
+    for (let k = 0; k < OCTAVES; k++) {
+      sum += amp * noise(u * freq + ox[k], v * freq + oy[k]);
       total += amp;
       amp *= persistence;
       freq *= 2;
@@ -146,12 +147,10 @@ function draw(
     for (let px = 0; px < width; px++) {
       const k = row + xs.cell[px];
       const fx = xs.frac[px];
-      const [a, b, c, d] = [
-        grid[k],
-        grid[k + 1],
-        grid[k + xs.nodes],
-        grid[k + xs.nodes + 1],
-      ];
+      const a = grid[k];
+      const b = grid[k + 1];
+      const c = grid[k + xs.nodes];
+      const d = grid[k + xs.nodes + 1];
       const top = a + (b - a) * fx;
       const bottom = c + (d - c) * fx;
       const h = top + (bottom - top) * fy;
@@ -163,23 +162,19 @@ function draw(
       let band = 0;
       while (band < steps.length && h > steps[band]) band++;
       // Within half a pixel of a boundary, the pixel takes the neighbor band's color in proportion to its
-      // area past the boundary, as a straight edge through the pixel would cover it.
+      // area past the boundary, as a straight edge through the pixel would cover it. Each share is at most
+      // half, so a band thinner than a pixel still leaves its own color a share.
       let below = 0;
       let above = 0;
       if (slope > 0) {
         if (band > 0) below = Math.max(0, 0.5 - (h - steps[band - 1]) / slope);
         if (band < steps.length)
           above = Math.max(0, 0.5 - (steps[band] - h) / slope);
-        // A band thinner than a pixel: its neighbors share the pixel.
-        if (below + above > 1)
-          [below, above] = [below / (below + above), above / (below + above)];
       }
       const own = 1 - below - above;
-      const [p, q, r] = [
-        fill[band],
-        fill[band > 0 ? band - 1 : band],
-        fill[band < steps.length ? band + 1 : band],
-      ];
+      const p = fill[band];
+      const q = fill[band > 0 ? band - 1 : band];
+      const r = fill[band < steps.length ? band + 1 : band];
       const o = (py * width + px) * 4;
       data[o] = Math.round(p[0] * own + q[0] * below + r[0] * above);
       data[o + 1] = Math.round(p[1] * own + q[1] * below + r[1] * above);
