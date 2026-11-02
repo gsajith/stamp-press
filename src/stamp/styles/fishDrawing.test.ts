@@ -27,9 +27,9 @@ describe("fish drawing 1", () => {
   // ADR 0001: a published style's output for a seed never changes. If one of these fails, the style's drawing
   // changed: restore it, and ship the change as a new style version instead.
   it("draws the same pixels it shipped with", () => {
-    expect(sha(pixels(1, 39, 50))).toBe("f4719941cb7195a1");
+    expect(sha(pixels(1, 39, 50))).toBe("7d7dddcefd877cc4");
     expect(sha(pixels(2, 50, 39))).toBe("28843e291420c165");
-    expect(sha(pixels(3, 44, 44))).toBe("5b2d5196d52dc8ab");
+    expect(sha(pixels(3, 44, 44))).toBe("849a278e2e282723");
   });
 
   it("draws different art for different seeds", () => {

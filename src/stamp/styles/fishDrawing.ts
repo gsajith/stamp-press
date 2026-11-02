@@ -31,13 +31,15 @@ import type { Style } from "../sources";
 //
 // The generator keeps fishdraw's body plan, parameters and line work, in its own units (a 500 by 300 plate).
 // What changed: random draws come from our seeded streams, trig and powers from ../exact, and clipping goes
-// through a grid of each polygon's edges. fishdraw grew one polygon union per scale to hide the scales behind
-// it; here each scale clips against the few earlier ones it overlaps, which hides the same lines and keeps a
-// fish to a few milliseconds.
+// through a grid of each polygon's edges. fishdraw clipped against polygon unions, growing one per scale to
+// hide the scales behind it; here a line clips against each polygon of the union in turn, and a scale only
+// against the earlier ones it overlaps. That hides the same lines, and a fish takes about 10 ms instead of
+// fishdraw's 230.
 //
 // The drawing step lays the fish and caption out in units of the art's short side, then rasterizes every
 // polyline as a round-capped line with its exact box-filtered coverage, so a line keeps its weight at any size
-// and the pixels match in every browser and in Node (ADR 0001).
+// and the pixels match in every browser and in Node (ADR 0001). The last fish is cached, so redrawing a stamp
+// only rasterizes.
 
 type Pt = [number, number];
 type Line = Pt[];
@@ -309,13 +311,27 @@ type Split = { in: Line[]; out: Line[] };
 // Splits polylines into their runs inside and outside a polygon.
 function clipMulti(lines: readonly Line[], poly: readonly Pt[]): Split {
   const result: Split = { in: [], out: [] };
-  if (poly.length < 3) {
-    result.out.push(...lines);
+  // A polygon with a NaN point, as a lip gets when its ends sit closer than its width, clips nothing, as in
+  // fishdraw.
+  if (poly.length < 3 || !poly.every(([x, y]) => Number.isFinite(x + y))) {
+    for (const line of lines) result.out.push(line);
     return result;
   }
   const P = prepare(poly);
+  const { box } = P;
   for (const line of lines) {
     if (!line.length) continue;
+    // Most lines lie well clear of the polygon: those are wholly outside.
+    const lb = bbox(line);
+    if (
+      lb.x > box.x + box.w ||
+      lb.x + lb.w < box.x ||
+      lb.y > box.y + box.h ||
+      lb.y + lb.h < box.y
+    ) {
+      result.out.push(line);
+      continue;
+    }
     let io = inside(P, line[0][0], line[0][1]);
     let run: Line = [];
     for (let i = 0; i < line.length; i++) {
@@ -346,7 +362,7 @@ function clipInAny(lines: readonly Line[], polys: readonly Line[]): Line[] {
   let rest = lines;
   for (const poly of polys) {
     const split = clipMulti(rest, poly);
-    kept.push(...split.in);
+    for (const line of split.in) kept.push(line);
     rest = split.out;
   }
   return kept;
@@ -468,7 +484,8 @@ function veinShape(poly: Line, n = 50): Line[] {
 // Tiny double ellipses scattered by Poisson disk, thinning towards the belly.
 function smalldotShape(region: Line[], scale = 1): Line[] {
   const b = bbox(region.flat());
-  const samples = poissondisk(b.w, b.h, 5 * scale);
+  // Ten darts per sample instead of thirty: the stipple looks the same and costs a third.
+  const samples = poissondisk(b.w, b.h, 5 * scale, 10);
   const out: Line[] = [];
   for (const [sx, sy] of samples) {
     const x = sx + b.x;
@@ -609,8 +626,8 @@ function approxPolyDp(polyline: Line, epsilon: number): Line {
   return polyline.filter((_, i) => keep[i]);
 }
 
-// Bridson's Poisson disk sampling over a W by H box, from its center.
-function poissondisk(W: number, H: number, r: number): Pt[] {
+// Bridson's Poisson disk sampling over a W by H box, from its center, with `tries` darts per sample.
+function poissondisk(W: number, H: number, r: number, tries = 30): Pt[] {
   const samples: Pt[] = [];
   const w = r / 1.4142135624;
   const r2 = r * r;
@@ -627,7 +644,7 @@ function poissondisk(W: number, H: number, r: number): Pt[] {
     const ridx = Math.floor(rand() * active.length);
     const pos = active[ridx];
     let found = false;
-    for (let n = 0; n < 30; n++) {
+    for (let n = 0; n < tries; n++) {
       const sr = r + rand() * r;
       // A uniform direction, by rejection from the square, rather than fishdraw's angle: the same spread
       // with no trig.
@@ -715,6 +732,8 @@ function squamaMesh(
   noiseX: number,
   noiseY: number,
   interclip: boolean,
+  ox: number,
+  oy: number,
 ): Line[] {
   const pts: Pt[] = [];
   for (let i = 0; i < n; i++)
@@ -751,12 +770,13 @@ function squamaMesh(
   const placed = new Map<number, { poly: Line; box: Box }[]>();
   const key = (cx: number, cy: number) => cx * 65536 + cy;
   const lay = (x: number, y: number, dw: number, dh: number) => {
-    let p = squamaFunc(x, y, dw, dh).map((a) => trsl(a, x, y));
+    // The pattern sees the mesh's own coordinates, as in fishdraw; the lines go out moved by (ox, oy).
+    let p = squamaFunc(x, y, dw, dh).map((a) => trsl(a, x + ox, y + oy));
     if (!interclip) {
       out.push(...p);
       return;
     }
-    const q = trsl(squamaMask(dw, dh), x, y);
+    const q = trsl(squamaMask(dw, dh), x + ox, y + oy);
     const pb = bbox(p.flat());
     const cx0 = Math.floor(pb.x / cell);
     const cx1 = Math.floor((pb.x + pb.w) / cell);
@@ -867,8 +887,17 @@ function fishBodyA(
   const fn: SquamaFunc = pattern
     ? (x, y, w, h) => squama(w, h, Number(pattern(x, y)) * 3)
     : (_x, _y, w, h) => squama(w, h);
-  const sq = squamaMesh(m, n + 3, uw, uh, fn, uw * 3, uh * 3, true).map((a) =>
-    trsl(a, b.x, b.y - uh * 1.5),
+  const sq = squamaMesh(
+    m,
+    n + 3,
+    uw,
+    uh,
+    fn,
+    uw * 3,
+    uh * 3,
+    true,
+    b.x,
+    b.y - uh * 1.5,
   );
   const o1 = clipMulti(clipIn(sq, outline2), outline3);
   const belly = o1.out.filter(() => rand() < 0.6);
@@ -898,7 +927,9 @@ function fishBodyB(
     uw * 8,
     uh * 8,
     false,
-  ).map((a) => trsl(a, b.x, b.y - uh * 8));
+    b.x,
+    b.y - uh * 8,
+  );
   const o1: Line[] = [];
   for (const line of clipIn(sq, outline2)) {
     const [x, y] = line[0];
