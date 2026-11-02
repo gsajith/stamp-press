@@ -43,11 +43,11 @@ A shared set of two to four inks and a paper tone that a stamp is printed in, pi
 _Avoid_: Theme, color scheme
 
 **Colors**:
-Which palettes a press prints in: the original ones or Sanzo Wada's combinations. A style printed in Wada's palettes is its own art source, `<style>w` such as `land1w`, so changing the setting never recolors a shared stamp.
+Which palettes a stamp prints in: the original ones or Sanzo Wada's combinations. A press prints in Wada's. A style printed in Wada's palettes is its own art source, `<style>w` such as `land1w`, so stamps shared in the original colors keep them.
 _Avoid_: Theme
 
 **Style set**:
-The styles a press picks from: the classic set, or the new set ported from open-source artists' generators. Chosen in the settings. Every style stays reachable by share link whichever set is chosen.
+A group of styles: the classic set, or the new set ported from open-source artists' generators. A press picks from the new set. Every style stays reachable by share link.
 _Avoid_: Mode, pack
 
 **Drop**:

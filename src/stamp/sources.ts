@@ -85,8 +85,8 @@ export function styleSource(
   };
 }
 
-// The styles a press picks from. To add a style, add one line here and nothing else: a reference names its
-// style, so adding one never changes an existing reference's stamp.
+// The classic styles. No longer pressed, but registered so their share links keep working. A reference names
+// its style, so adding a style never changes an existing reference's stamp.
 export const STYLES: readonly Style[] = [
   landscapeSilhouette1,
   bauhausGrid1,
@@ -113,7 +113,7 @@ export const STYLES: readonly Style[] = [
 ];
 
 // The new style set: generators ported from open-source artists' work (docs/research/open-source-generators.md),
-// pressed instead of STYLES when the settings pick it. Same rule as STYLES: add one line per style.
+// the styles a press picks from. To add a style, add one line here and nothing else.
 export const NEW_STYLES: readonly Style[] = [
   apparatus1,
   flowLines1,
