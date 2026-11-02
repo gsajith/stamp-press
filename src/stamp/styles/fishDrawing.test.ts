@@ -17,11 +17,12 @@ const sha = (data: Uint8ClampedArray) =>
 
 describe("fish drawing 1", () => {
   it("is pressed in the new style set", () => {
-    expect(NEW_STYLES.map((s) => s.id)).toContain("fish1");
-    const sources = new Set(
-      Array.from({ length: 200 }, () => pressStampRef(NEW_STYLES).source),
-    );
-    expect(sources).toContain("fish1");
+    const at = NEW_STYLES.findIndex((s) => s.id === "fish1");
+    expect(at).toBeGreaterThanOrEqual(0);
+    // A press whose random pick lands on fish1's slot.
+    const pick = () => (at + 0.5) / NEW_STYLES.length;
+    expect(pressStampRef(NEW_STYLES, pick).source).toBe("fish1");
+    expect(pressStampRef(NEW_STYLES, pick, "wada").source).toBe("fish1w");
   });
 
   // ADR 0001: a published style's output for a seed never changes. If one of these fails, the style's drawing
