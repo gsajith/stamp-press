@@ -1,10 +1,12 @@
 import { PALETTES_1, PALETTES_WADA, type Palette } from "./palettes";
 import { pick, randomSeed, subSeed } from "./random";
 import type { StampRef } from "./ref";
+import { apparatus1 } from "./styles/apparatus";
 import { bauhausGrid1 } from "./styles/bauhausGrid";
 import { botanicalLSystem1 } from "./styles/botanicalLSystem";
 import { crossStitch1 } from "./styles/crossStitch";
 import { escherTessellation1 } from "./styles/escherTessellation";
+import { flowLines1 } from "./styles/flowLines";
 import { girih1 } from "./styles/girih";
 import { guillocheRosette1 } from "./styles/guillocheRosette";
 import { halftoneObject1 } from "./styles/halftoneObject";
@@ -15,8 +17,8 @@ import { midCentury1 } from "./styles/midCentury";
 import { paperDiorama1 } from "./styles/paperDiorama";
 import { paperMarbling1 } from "./styles/paperMarbling";
 import { philatelicError1 } from "./styles/philatelicError";
-import { quiltBlocks1 } from "./styles/quiltBlocks";
 import { pixelSprite1 } from "./styles/pixelSprite";
+import { quiltBlocks1 } from "./styles/quiltBlocks";
 import { risoOverprint1 } from "./styles/risoOverprint";
 import { seashell1 } from "./styles/seashell";
 import { skyChart1 } from "./styles/skyChart";
@@ -92,7 +94,11 @@ export const STYLES: readonly Style[] = [
 
 // The new style set: generators ported from open-source artists' work (docs/research/open-source-generators.md),
 // pressed instead of STYLES when the settings pick it. Same rule as STYLES: add one line per style.
-export const NEW_STYLES: readonly Style[] = [quiltBlocks1];
+export const NEW_STYLES: readonly Style[] = [
+  apparatus1,
+  flowLines1,
+  quiltBlocks1,
+];
 
 // Style versions no longer pressed. They stay registered so their share links keep working: when a new
 // version replaces a style in STYLES or NEW_STYLES, move the old one here.
