@@ -4,6 +4,7 @@ import type { StampRef } from "./ref";
 import { apparatus1 } from "./styles/apparatus";
 import { bauhausGrid1 } from "./styles/bauhausGrid";
 import { botanicalLSystem1 } from "./styles/botanicalLSystem";
+import { coatOfArms1 } from "./styles/coatOfArms";
 import { contourBands1 } from "./styles/contourBands";
 import { crossStitch1 } from "./styles/crossStitch";
 import { escherTessellation1 } from "./styles/escherTessellation";
@@ -132,6 +133,7 @@ export const NEW_STYLES: readonly Style[] = [
   spirograph1,
   fairIsle1,
   isometricBlocks1,
+  coatOfArms1,
 ];
 
 // Style versions no longer pressed. They stay registered so their share links keep working: when a new
