@@ -14,11 +14,15 @@ import { halftoneObject1 } from "./styles/halftoneObject";
 import { islandSurvey1 } from "./styles/islandSurvey";
 import { landscapeSilhouette1 } from "./styles/landscapeSilhouette";
 import { linocut1 } from "./styles/linocut";
+import { mathMarbling2 } from "./styles/mathMarbling";
 import { midCentury1 } from "./styles/midCentury";
+import { openPeeps1 } from "./styles/openPeeps";
 import { paperDiorama1 } from "./styles/paperDiorama";
 import { paperMarbling1 } from "./styles/paperMarbling";
 import { philatelicError1 } from "./styles/philatelicError";
 import { pixelSprite1 } from "./styles/pixelSprite";
+import { plotterHomage1 } from "./styles/plotterHomage";
+import { quiltBlocks1 } from "./styles/quiltBlocks";
 import { risoOverprint1 } from "./styles/risoOverprint";
 import { seashell1 } from "./styles/seashell";
 import { skyChart1 } from "./styles/skyChart";
@@ -97,6 +101,10 @@ export const STYLES: readonly Style[] = [
 export const NEW_STYLES: readonly Style[] = [
   apparatus1,
   flowLines1,
+  openPeeps1,
+  quiltBlocks1,
+  plotterHomage1,
+  mathMarbling2,
   fishDrawing1,
 ];
 
