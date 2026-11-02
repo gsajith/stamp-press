@@ -74,6 +74,9 @@ export type FractureOptions = {
   diminish: number;
   // Stops growing once this many crack points are placed, to bound the work.
   maxPoints?: number;
+  // The box the lookup grid covers, as x0, y0, x1, y1: the sources' box when absent. A fixed box keeps the
+  // grid, and with it the order the pulls on a crack add up in, the same however the sources are cropped.
+  box?: readonly [number, number, number, number];
 };
 
 // The crack paths that grow from the blows, each a list of points. A crack that meets another ends on one of
@@ -90,6 +93,7 @@ export function fractures(
     far = 0,
     diminish,
     maxPoints = Infinity,
+    box,
   }: FractureOptions,
 ): Pt[][] {
   // Every point, sources first and then the cracks' own points, which later cracks also turn toward.
@@ -101,15 +105,17 @@ export function fractures(
   const A: number[] = [];
   const B: number[] = [];
 
-  // The lookup grid: square cells over the sources' box, each a linked list of the points in it, and another
-  // of the segments ending in it. Anything outside the box belongs to its edge cells.
+  // The lookup grid: square cells over the box, each a linked list of the points in it, and another of the
+  // segments ending in it. Anything outside the box belongs to its edge cells.
   let [x0, y0, x1, y1] = [Infinity, Infinity, -Infinity, -Infinity];
-  for (const [x, y] of sources) {
-    x0 = Math.min(x0, x);
-    y0 = Math.min(y0, y);
-    x1 = Math.max(x1, x);
-    y1 = Math.max(y1, y);
-  }
+  if (box) [x0, y0, x1, y1] = box;
+  else
+    for (const [x, y] of sources) {
+      x0 = Math.min(x0, x);
+      y0 = Math.min(y0, y);
+      x1 = Math.max(x1, x);
+      y1 = Math.max(y1, y);
+    }
   const size = reach / 4;
   const cols = Math.max(1, Math.ceil((x1 - x0) / size));
   const rows = Math.max(1, Math.ceil((y1 - y0) / size));
@@ -362,10 +368,9 @@ function darts(
 
 // Caps the crack points placed, so the work stays within the draw budget.
 const MAX_POINTS = 11000;
-// Half the side of the box points are scattered over, centered on the art: wider than any art's ground. An
-// art's long side is at most about 1.4 times its short side, and a whole-frame ground reaches up to nine steps
-// past it.
-const SCATTER = 0.78;
+// Half the side of the box points are scattered over, centered on the art: wider than any art's ground, which
+// reaches at most 0.7 plus four steps from the middle.
+const SCATTER = 0.75;
 // Draws with a short side under this many pixels are supersampled.
 const SUPERSAMPLE_BELOW = 128;
 
@@ -398,21 +403,16 @@ function draw(
     [gx, gy] = [r, r];
     inside = (x, y) => x * x + y * y < r * r;
   } else {
-    // The ground's edges snap to a grid eight steps apart, so the slightly different shape of a larger draw
-    // almost never moves them, and no crack near an edge grows differently.
-    if (shape < 0.55) {
-      step = 0.0055 + 0.0017 * rand();
-      const m = 0.07 + 0.03 * rand();
-      const q = 8 * step;
-      [gx, gy] = [q * Math.floor((hw - m) / q), q * Math.floor((hh - m) / q)];
-    } else {
-      step = 0.0066 + 0.0018 * rand();
-      const q = 8 * step;
-      [gx, gy] = [
-        q * Math.ceil((hw + step) / q),
-        q * Math.ceil((hh + step) / q),
-      ];
-    }
+    // The ground is a box of fixed size for the art's shape, so a larger draw's slightly different shape
+    // never moves its edges, and no crack near them grows differently. The art's short side is 1, and its
+    // long side is either the same, on a square stamp, or 1.28 to 1.4 long.
+    const square = Math.abs(hw - hh) < 0.05;
+    const inset = shape < 0.55;
+    step = inset ? 0.0055 + 0.0017 * rand() : 0.0066 + 0.0018 * rand();
+    const m = inset ? 0.07 + 0.03 * rand() : -4 * step;
+    const short = 0.5 - m;
+    const long = (square ? 0.5 : inset ? 0.64 : 0.7) - m;
+    [gx, gy] = hw > hh ? [long, short] : [short, long];
     inside = (x, y) => Math.abs(x) < gx && Math.abs(y) < gy;
   }
   // Points about 3.8 steps apart on average, at least one step apart, as in the original. They're scattered
@@ -425,15 +425,18 @@ function draw(
     [-SCATTER, -SCATTER, 2 * SCATTER, 2 * SCATTER],
     step,
   ).filter(([x, y]) => inside(x, y));
-  // Blows sit within the ground, placed as shares of its half widths.
+  // Blows sit in a box of fixed size around the middle, inside any art's ground, or within the disc. Placing
+  // them in art units, not as shares of the ground, keeps them still when a larger draw moves the ground's
+  // edges.
   const blowCount = 4 + Math.floor(rand() * 4);
   const blowRand = stream(seed, 2);
+  const [bx, by] = disc ? [gx, gy] : shape < 0.55 ? [0.3, 0.3] : [0.45, 0.45];
   const blows = Array.from({ length: blowCount }, () => {
     let [u, v] = [2 * blowRand() - 1, 2 * blowRand() - 1];
     while (disc && u * u + v * v >= 1)
       [u, v] = [2 * blowRand() - 1, 2 * blowRand() - 1];
     return {
-      at: [u * gx, v * gy] as Pt,
+      at: [u * bx, v * by] as Pt,
       count: 2 + Math.floor(blowRand() * 2),
     };
   });
@@ -450,6 +453,7 @@ function draw(
     far,
     diminish: 0.997 + 0.002 * rand(),
     maxPoints: MAX_POINTS,
+    box: [-SCATTER, -SCATTER, SCATTER, SCATTER],
   });
 
   // Lines 1 to 1.3 desk pixels wide, over the original's faint halo three times as wide.

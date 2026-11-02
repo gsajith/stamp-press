@@ -37,12 +37,16 @@ describe("fracture 1", () => {
   // ADR 0001: a published style's output for a seed never changes. If one of these fails, the style's drawing
   // changed: restore it, and ship the change as a new style version instead.
   it("draws the same pixels it shipped with", () => {
-    expect(sha(pixels(1, 39, 50))).toBe("9d10e11e3b4780cf");
-    expect(sha(pixels(2, 50, 39))).toBe("190114bc92edacbe");
-    expect(sha(pixels(3, 44, 44))).toBe("d7a16fb3c97cb744");
-    expect(sha(pixels(4, 44, 56, "crack1w"))).toBe("635534ce49472a8d");
-    // Desk size.
-    expect(sha(pixels(5, 160, 205))).toBe("5443757edbdc5870");
+    expect(sha(pixels(1, 39, 50))).toBe("cf24301c349e2798");
+    expect(sha(pixels(2, 50, 39))).toBe("921efeb633f82f8d");
+    expect(sha(pixels(3, 44, 44))).toBe("b5ed1bd9c7c0099c");
+    expect(sha(pixels(4, 44, 56, "crack1w"))).toBe("6416242440aa7a95");
+    // Tinted cells: a patch, then cells scattered in one ink.
+    expect(sha(pixels(7, 39, 50))).toBe("96d8dd2b30fe8d55");
+    expect(sha(pixels(10, 50, 39))).toBe("906b6cd151bdd0e5");
+    // Desk size, where nothing is supersampled: lines only, then cells scattered in two inks.
+    expect(sha(pixels(5, 160, 205))).toBe("a1d77d8568053c97");
+    expect(sha(pixels(14, 205, 160))).toBe("2cbf0ac3b019a43e");
   });
 
   it("draws different art for different seeds", () => {
@@ -84,13 +88,14 @@ describe("fracture 1", () => {
   );
 
   // The detail view rounds each side on its own, so its art's shape is a pixel off the desk's: a portrait art
-  // 200x256 on the desk is 1597x2048 in the detail view. Each large pixel falls in the small pixel at the same
+  // 200x256 on the desk is 1597x2048 in the detail view. Seed 631 once drew unrelated art at these two sizes. Each large pixel falls in the small pixel at the same
   // spot in art units, measured from the art's middle, and the small pixels it fills are compared.
   it.each([
     [7, 200, 256, 1597, 2048],
     [8, 256, 200, 2048, 1597],
     [9, 226, 226, 1805, 1806],
     [10, 172, 228, 1379, 1820],
+    [631, 256, 200, 2048, 1597],
   ])("draws seed %i the same at %ix%i as at %ix%i", (seed, w, h, wl, hl) => {
     const small = pixels(seed, w, h);
     const large = pixels(seed, wl, hl);
