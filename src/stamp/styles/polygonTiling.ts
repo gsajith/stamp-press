@@ -54,17 +54,27 @@ const PI = Math.PI;
 // A regular polygon with edges 1 long, by its side count, center and rotation.
 type Shape = { sides: number; x: number; y: number; rotation: number };
 
+// Corners relative to the center, by side count and rotation. Repeats copy a shape's rotation exactly, so
+// thousands of copies share a few entries here instead of each redoing the trigonometry.
+const cornerOffsets = new Map<string, Point[]>();
+
 // Its corners, the first repeated at the end.
 function shapePoints({ sides, x, y, rotation }: Shape): Point[] {
-  const angle = (2 * PI) / sides;
-  let r = rotation - PI / 2;
-  if (sides % 2 === 0) r += angle / 2;
-  const d = 0.5 / sin(angle / 2);
-  const points: Point[] = [];
-  for (let i = 0; i < sides; i++) {
-    const a = angle * i + r;
-    points.push([x + cos(a) * d, y + sin(a) * d]);
+  const k = `${sides} ${rotation}`;
+  let offsets = cornerOffsets.get(k);
+  if (!offsets) {
+    const angle = (2 * PI) / sides;
+    let r = rotation - PI / 2;
+    if (sides % 2 === 0) r += angle / 2;
+    const d = 0.5 / sin(angle / 2);
+    offsets = [];
+    for (let i = 0; i < sides; i++) {
+      const a = angle * i + r;
+      offsets.push([cos(a) * d, sin(a) * d]);
+    }
+    cornerOffsets.set(k, offsets);
   }
+  const points = offsets.map(([dx, dy]): Point => [x + dx, y + dy]);
   points.push(points[0]);
   return points;
 }
@@ -83,13 +93,14 @@ function adjacent(shape: Shape, sides: number, edge: number): Shape {
   return { sides, x, y, rotation: a };
 }
 
-// tile.py's normalize: positions to 6 decimals, as a map key.
+// tile.py's normalize: positions to 6 decimals, as a map key. Both fit in 26 bits within 30 edges of the
+// origin, so the key is one exact integer, which maps look up faster than strings.
 const key = (x: number, y: number) =>
-  `${Math.round(x * 1e6)},${Math.round(y * 1e6)}`;
+  (Math.round(x * 1e6) + 2 ** 25) * 2 ** 26 + Math.round(y * 1e6) + 2 ** 25;
 
 class Model {
   shapes: Shape[] = [];
-  lookup = new Map<string, Shape>();
+  lookup = new Map<number, Shape>();
 
   append(shape: Shape) {
     this.shapes.push(shape);
@@ -146,7 +157,7 @@ class Model {
   // The dual tiling: one face per vertex where three or more shapes meet, its corners the shapes' centers.
   dual(): Point[][] {
     const vertexes = new Map<
-      string,
+      number,
       { x: number; y: number; shapes: Shape[] }
     >();
     for (const shape of this.lookup.values())
@@ -318,11 +329,13 @@ const PATTERNS: readonly ((extent: number) => Model)[] = [
 // gap of 2 * MARGIN - LINE shows the ground between neighbours.
 const MARGIN = 0.1;
 const LINE = 0.1;
-// Polygons within GRID edges of the origin are binned for lookup: enough for the widest view (9 edges across
-// the short side, a 1.4 ratio) from the farthest center a seed picks. Repeats reach EXTENT, a polygon's
-// width further, so every corner within GRID has all its polygons and its dual face.
-const EXTENT = 15;
-const GRID = 11;
+// Polygons within GRID edges of the origin, along either axis, are binned for lookup. The view turns only by
+// quarter turns, so it spans at most 4.5 * 1.4 edges from its center along either axis (9 edges across the
+// short side, a 1.4 ratio), and the center is at most a dodecagon's radius, 1.93, from the origin: 8.2 in all.
+// Repeats keep copies centered within EXTENT, two dodecagon radii further, so every polygon and dual face
+// reaching into the view is complete.
+const EXTENT = 13;
+const GRID = 9;
 
 // A tiling ready to draw: its convex polygons as edges, each edge's outward unit normal and offset (n·p = c on
 // the edge), the inset corner where it starts, and a color class per polygon. `cells` lists the polygons
@@ -344,8 +357,13 @@ type Tiling = {
 };
 
 function buildTiling(polygons: Point[][], corner: Point): Tiling {
-  const kept = polygons.filter((points) =>
-    points.some(([x, y]) => Math.abs(x) < GRID + 1 && Math.abs(y) < GRID + 1),
+  // The polygons whose bounding boxes reach into the binned square.
+  const kept = polygons.filter(
+    (points) =>
+      points.some(([x]) => x > -GRID) &&
+      points.some(([x]) => x < GRID) &&
+      points.some(([, y]) => y > -GRID) &&
+      points.some(([, y]) => y < GRID),
   );
   const edges = kept.reduce((sum, p) => sum + p.length - 1, 0);
   const start = new Int32Array(kept.length + 1);
@@ -468,8 +486,9 @@ function draw(
   const pattern = Math.floor(rand() * PATTERNS.length);
   const dual = rand() < 0.4 && !NO_DUAL.includes(pattern);
   const t = tilingFor(pattern, dual);
-  // Edges across the short side. The finite pattern is fitted whole.
-  const across = pattern === FINITE ? 2.2 * t.radius : 4.5 + 4.5 * rand();
+  // Edges across the short side. The finite pattern is fitted to the short side, its outer rings just cropped,
+  // which keeps its outlines about a desk pixel wide.
+  const across = pattern === FINITE ? 1.75 * t.radius : 4.5 + 4.5 * rand();
   const turned = rand() < 0.5;
   // Centered on the first polygon, or on one of its corners.
   const [cx, cy] = pattern !== FINITE && rand() < 0.5 ? t.corner : [0, 0];
