@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   artInset,
   formatStampRef,
+  PALETTES_WADA,
   parseStampRef,
   pressStampRef,
   punchGeometry,
@@ -193,5 +194,28 @@ describe("pressing a stamp", () => {
   it("presses the registered styles by default", () => {
     const ids = STYLES.map((s) => s.id);
     expect(ids).toContain(pressStampRef().source);
+  });
+});
+
+describe("Wada colors", () => {
+  const styles = ["a1"].map(testStyle);
+
+  it("presses a style's Wada source when the setting is on", () => {
+    expect(pressStampRef(styles, () => 0, "wada").source).toBe("a1w");
+    expect(pressStampRef(styles, () => 0, "original").source).toBe("a1");
+  });
+
+  it("prints a Wada source in Wada's palettes and keeps the same art", () => {
+    for (const seed of [1, 2, 3, 90210]) {
+      const original = resolveStamp({ source: "land1", seed })!;
+      const wada = resolveStamp({ source: "land1w", seed })!;
+      expect(PALETTES_WADA).toContain(wada.palette);
+      expect(wada.art).toEqual(original.art);
+    }
+  });
+
+  it("keeps a style that names its palettes in them", () => {
+    const fussy = { ...testStyle("fussy1"), palettes: ["harbor"] };
+    expect(pressStampRef([fussy], () => 0, "wada").source).toBe("fussy1");
   });
 });

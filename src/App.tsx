@@ -5,6 +5,13 @@ import { useDetailHistory } from "./detail/useDetailHistory";
 import { UNMOVED, type View } from "./detail/view";
 import { visibleArea } from "./scene/camera";
 import Scene from "./scene/Scene";
+import {
+  loadSettings,
+  saveSettings,
+  type Settings,
+  stylesFor,
+} from "./settings/settings";
+import { SettingsDialog } from "./settings/SettingsDialog";
 import { pressStampRef } from "./stamp";
 import "./App.css";
 
@@ -12,13 +19,22 @@ import "./App.css";
 // settle it and fix it in place (at most 0.6 s), since the view lifts it from where it lies.
 const SHARED_OPEN_DELAY = 700;
 
+// A fresh reference from the styles and colors the settings pick.
+const pressWith = (settings: Settings) =>
+  pressStampRef(stylesFor(settings), Math.random, settings.colors);
+
 export default function App() {
+  const [settings, setSettings] = useState(loadSettings);
+  const changeSettings = useCallback((next: Settings) => {
+    setSettings(next);
+    saveSettings(next);
+  }, []);
   // One stamp flings out of the press on first load: the one a share link names, or a fresh press.
   const [desk, dispatch] = useReducer(deskReducer, EMPTY_DESK, (empty) =>
     deskReducer(empty, {
       type: "load",
       link: new URLSearchParams(location.search).get("stamp"),
-      ref: pressStampRef(),
+      ref: pressWith(settings),
     }),
   );
   // The open stamp's pan, zoom and tilt, which the detail view's gestures write and the scene reads every frame.
@@ -31,11 +47,11 @@ export default function App() {
     () =>
       dispatch({
         type: "press",
-        ref: pressStampRef(),
+        ref: pressWith(settings),
         at: performance.now(),
         area: visibleArea(innerWidth / innerHeight),
       }),
-    [],
+    [settings],
   );
   const land = useCallback((id: number) => dispatch({ type: "land", id }), []);
   const open = useCallback((id: number) => dispatch({ type: "open", id }), []);
@@ -58,6 +74,8 @@ export default function App() {
       if (e.key !== " " && e.key !== "Enter") return;
       if (e.repeat || e.metaKey || e.ctrlKey || e.altKey) return;
       if (e.target instanceof HTMLButtonElement) return;
+      // Inside the settings dialog, Space and Enter belong to its controls.
+      if (e.target instanceof Element && e.target.closest("dialog")) return;
       e.preventDefault();
       press();
     };
@@ -110,6 +128,7 @@ export default function App() {
         >
           Generate a stamp
         </button>
+        <SettingsDialog settings={settings} onChange={changeSettings} />
       </div>
       {desk.open !== null && link !== null && (
         <DetailView
