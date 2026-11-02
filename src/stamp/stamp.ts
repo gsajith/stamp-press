@@ -52,8 +52,9 @@ export function artInset({ punch, margin }: Stamp): number {
   return margin > 0 ? punch.notch + margin : 0;
 }
 
-// Draws a stamp's whole face at `scale` pixels per stamp unit: paper, the art inside its margin, and the punch
-// cut out of it, with everything outside the outline left transparent. `canvas` makes a scratch canvas.
+// Draws a stamp's whole face at `scale` pixels per stamp unit: paper, the art inside its margin, a hairline
+// along the punch, and the punch cut out of it, with everything outside the outline left transparent.
+// `canvas` makes a scratch canvas.
 export function drawFace(
   ctx: CanvasRenderingContext2D,
   stamp: Stamp,
@@ -69,12 +70,20 @@ export function drawFace(
   const art = canvas(aw, ah);
   drawArt(art, stamp, aw, ah);
   ctx.drawImage(art.canvas, inset, inset);
-  ctx.save();
-  ctx.globalCompositeOperation = "destination-in";
   ctx.beginPath();
   for (const [x, y] of outline)
     ctx.lineTo((x + width / 2) * (w / width), (height / 2 - y) * (h / height));
   ctx.closePath();
+  // A black hairline along the cut. The stroke straddles the outline, so the cut below keeps its inner half.
+  ctx.save();
+  ctx.strokeStyle = "#000";
+  ctx.lineJoin = "round";
+  ctx.lineWidth = 2 * CUT_LINE * scale;
+  ctx.stroke();
+  ctx.globalCompositeOperation = "destination-in";
   ctx.fill();
   ctx.restore();
 }
+
+// The hairline's width in stamp units: one pixel on the desk's 256 px per unit texture.
+const CUT_LINE = 1 / 256;
