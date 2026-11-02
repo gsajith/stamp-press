@@ -14,6 +14,7 @@ import { islandSurvey1 } from "./styles/islandSurvey";
 import { landscapeSilhouette1 } from "./styles/landscapeSilhouette";
 import { linocut1 } from "./styles/linocut";
 import { midCentury1 } from "./styles/midCentury";
+import { openPeeps1 } from "./styles/openPeeps";
 import { paperDiorama1 } from "./styles/paperDiorama";
 import { paperMarbling1 } from "./styles/paperMarbling";
 import { philatelicError1 } from "./styles/philatelicError";
@@ -100,6 +101,7 @@ export const NEW_STYLES: readonly Style[] = [
   apparatus1,
   flowLines1,
   pixelPlanet1,
+  openPeeps1,
   quiltBlocks1,
   plotterHomage1,
 ];
