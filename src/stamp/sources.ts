@@ -4,22 +4,28 @@ import type { StampRef } from "./ref";
 import { apparatus1 } from "./styles/apparatus";
 import { bauhausGrid1 } from "./styles/bauhausGrid";
 import { botanicalLSystem1 } from "./styles/botanicalLSystem";
+import { contourBands1 } from "./styles/contourBands";
 import { crossStitch1 } from "./styles/crossStitch";
 import { escherTessellation1 } from "./styles/escherTessellation";
+import { fishDrawing1 } from "./styles/fishDrawing";
 import { flowLines1 } from "./styles/flowLines";
 import { girih1 } from "./styles/girih";
 import { grownTree1 } from "./styles/grownTree";
 import { guillocheRosette1 } from "./styles/guillocheRosette";
 import { halftoneObject1 } from "./styles/halftoneObject";
+import { inkLandscape1 } from "./styles/inkLandscape";
 import { islandSurvey1 } from "./styles/islandSurvey";
+import { isohedralTiling1 } from "./styles/isohedralTiling";
 import { landscapeSilhouette1 } from "./styles/landscapeSilhouette";
 import { linocut1 } from "./styles/linocut";
 import { mathMarbling2 } from "./styles/mathMarbling";
 import { midCentury1 } from "./styles/midCentury";
+import { nonflowers1 } from "./styles/nonflowers";
 import { openPeeps1 } from "./styles/openPeeps";
 import { paperDiorama1 } from "./styles/paperDiorama";
 import { paperMarbling1 } from "./styles/paperMarbling";
 import { philatelicError1 } from "./styles/philatelicError";
+import { pixelPlanet1 } from "./styles/pixelPlanet";
 import { pixelSprite1 } from "./styles/pixelSprite";
 import { plotterHomage1 } from "./styles/plotterHomage";
 import { quiltBlocks1 } from "./styles/quiltBlocks";
@@ -101,10 +107,16 @@ export const STYLES: readonly Style[] = [
 export const NEW_STYLES: readonly Style[] = [
   apparatus1,
   flowLines1,
+  pixelPlanet1,
   openPeeps1,
   quiltBlocks1,
   plotterHomage1,
   mathMarbling2,
+  contourBands1,
+  inkLandscape1,
+  fishDrawing1,
+  nonflowers1,
+  isohedralTiling1,
   grownTree1,
 ];
 
