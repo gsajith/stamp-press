@@ -72,7 +72,10 @@ function grow(g: Growth, rand: () => number): Cell[][] {
   const extend = (x: number, y: number) =>
     active(x, y, 0.2) && rand() <= g.chanceExtend;
   const newBlock = (): Cell => {
-    if (rand() > 0.85) main = Math.floor(rand() * g.colors);
+    // The original switches to any of its seven colors. With our two or three, a switch picks a different
+    // fill, or most machines would stay one color.
+    if (rand() > 0.85)
+      main = (main + 1 + Math.floor(rand() * (g.colors - 1))) % g.colors;
     return { h: true, v: true, inside: true, color: main };
   };
 
