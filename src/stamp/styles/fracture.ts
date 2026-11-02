@@ -49,12 +49,13 @@ const MIN_CONTRAST = 60;
 // The original's growth constants. A crack turns toward the points ahead of it within a cone whose half angle
 // has this cosine (about 32 degrees). Each step it branches with SPAWN_FACTOR times its chance, which starts
 // at 1 and shrinks every step. A branch starts with SPAWN_DIMINISH of its parent's chance, at right angles to
-// it give or take SPAWN_ANGLE / 2 radians.
+// it give or take SPAWN_ANGLE / 2 radians. SPAWN_FACTOR is the original's 0.2 raised to 0.3: with the shorter
+// look ahead below, 0.2 left cells about twice as wide, in steps, as the original's sample shows.
 const DOT = 0.85;
 const DOT2 = DOT * DOT;
 const SPAWN_DIMINISH = 0.9;
 const SPAWN_ANGLE = 2.0;
-const SPAWN_FACTOR = 0.2;
+const SPAWN_FACTOR = 0.3;
 
 export type FractureOptions = {
   // The scattered points cracks travel through. A crack dies where none lie ahead of it.
@@ -343,7 +344,7 @@ function darts(
 }
 
 // Caps the crack points placed, so the work stays within the draw budget.
-const MAX_POINTS = 10000;
+const MAX_POINTS = 11000;
 // Draws with a short side under this many pixels are supersampled.
 const SUPERSAMPLE_BELOW = 128;
 
@@ -366,18 +367,18 @@ function draw(
   let box: [number, number, number, number];
   let inside: (x: number, y: number) => boolean;
   if (shape < 0.35) {
-    step = 0.0042 + 0.0014 * rand();
+    step = 0.0046 + 0.0014 * rand();
     const r = 0.42 + 0.04 * rand();
     const [cx, cy] = [W / 2, H / 2];
     box = [cx - r, cy - r, 2 * r, 2 * r];
     inside = (x, y) => (x - cx) ** 2 + (y - cy) ** 2 < r * r;
   } else if (shape < 0.55) {
-    step = 0.005 + 0.0018 * rand();
+    step = 0.0055 + 0.0017 * rand();
     const m = 0.07 + 0.03 * rand();
     box = [m, m, W - 2 * m, H - 2 * m];
     inside = () => true;
   } else {
-    step = 0.0056 + 0.0018 * rand();
+    step = 0.0066 + 0.0018 * rand();
     const pad = 4 * step;
     box = [-pad, -pad, W + 2 * pad, H + 2 * pad];
     inside = () => true;
