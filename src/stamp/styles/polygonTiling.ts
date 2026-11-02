@@ -3,7 +3,7 @@
 // between them as grout, and the polygons are filled by type: hexagons in one ink, squares in another. The
 // tilings are built as Fogleman builds them: a first polygon, rings of neighbours attached edge to edge, and
 // a set of those polygons whose centers are repeated across the plane. Seeds pick one of his 13 patterns or
-// its dual, the zoom, the center and the colors.
+// its dual, the zoom, a quarter turn, the center and the colors, on his dark ground or on the paper.
 //
 // Like the other styles it computes every pixel itself, in units of the polygons' edge, so it is resolution
 // independent, and with only IEEE-exact arithmetic (trigonometry from exact.ts) its pixels match in every
