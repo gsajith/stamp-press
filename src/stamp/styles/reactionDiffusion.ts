@@ -50,7 +50,8 @@ const rgb = (hex: string): Rgb => [
 ];
 
 // The grid: SHORT cells across the art's short side, LONG along its long side, wrapping at both. A portrait
-// punch is 0.78 wide, so LONG covers it. Wider margins show a few cells more, which wrap around seamlessly.
+// stamp's long side spans 56 to 61 cells, depending on its margin, so its last few rows repeat its first ones.
+// The grid wraps, so the repeat continues the pattern without a seam.
 const SHORT = 44;
 const LONG = 56;
 // Steps and their length. The original takes steps of at most 0.8 and never stops. A desk draw affords about
@@ -86,7 +87,7 @@ function simulate(rand: () => number): Float32Array {
   let u2 = new Float32Array(n);
   let v2 = new Float32Array(n);
   // The original seeds a drop of the second chemical wherever the visitor clicks: radius sqrt(5) texels, v = 0.9.
-  // A bare drop overshoots at our step length and dies, so ours also halves the first chemical inside it.
+  // A bare drop overshoots at our step length and dies, so ours sets v = 1 and halves the first chemical.
   for (let d = 0; d < DROPS; d++) {
     const [cx, cy] = [Math.floor(rand() * W), Math.floor(rand() * H)];
     for (let y = -2; y <= 2; y++)
@@ -182,9 +183,9 @@ function draw(
   const rand = stream(seed, 0);
   const field = simulate(rand);
 
-  // The original's gradient turns from its background color at v = 0.2 and reaches its brightest at 0.4 and
-  // up. A settled pattern peaks below 0.4, so the second edge sits between 0.2 and the field's peak, as a
-  // core line inside each stripe and a dot inside each spot.
+  // The original's gradient leaves its background color at v = 0.2, turns red at 0.4 and white at 0.6. A
+  // settled pattern peaks below 0.4, so the second edge sits between 0.2 and the field's peak, as a core
+  // line inside each stripe and a dot inside each spot.
   let peak = 0;
   for (let k = 0; k < field.length; k++) peak = Math.max(peak, field[k]);
   const steps = [0.2, 0.2 + (peak - 0.2) * (0.45 + 0.2 * rand())];
