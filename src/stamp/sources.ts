@@ -4,6 +4,7 @@ import type { StampRef } from "./ref";
 import { apparatus1 } from "./styles/apparatus";
 import { bauhausGrid1 } from "./styles/bauhausGrid";
 import { botanicalLSystem1 } from "./styles/botanicalLSystem";
+import { contourBands1 } from "./styles/contourBands";
 import { crossStitch1 } from "./styles/crossStitch";
 import { escherTessellation1 } from "./styles/escherTessellation";
 import { girih1 } from "./styles/girih";
@@ -92,7 +93,7 @@ export const STYLES: readonly Style[] = [
 
 // The new style set: generators ported from open-source artists' work (docs/research/open-source-generators.md),
 // pressed instead of STYLES when the settings pick it. Same rule as STYLES: add one line per style.
-export const NEW_STYLES: readonly Style[] = [apparatus1];
+export const NEW_STYLES: readonly Style[] = [apparatus1, contourBands1];
 
 // Style versions no longer pressed. They stay registered so their share links keep working: when a new
 // version replaces a style in STYLES or NEW_STYLES, move the old one here.
