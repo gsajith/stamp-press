@@ -754,10 +754,17 @@ function grow(rand: () => number, noise: Noise, inks: Inks): Plant {
       col: branchColor,
       frk: branchFork,
     });
-    for (let i = 0; i < PL.length; i++) {
-      if (i / PL.length <= 0.1) continue;
+    // Leaves and flowers grow along every branch past the first tenth. Their chances are thinned to about
+    // MAX_LEAVES and MAX_FLOWERS over all those points, so a shrub fills out all over, not just on the
+    // branches drawn first.
+    const first = Math.floor(PL.length * 0.1) + 1;
+    let sites = 0;
+    for (let i = first; i < PL.length; i++) sites += PL[i][1].length;
+    const leafAt = Math.min(leafChance, MAX_LEAVES / sites);
+    const flowerAt = Math.min(flowerChance, MAX_FLOWERS / sites);
+    for (let i = first; i < PL.length; i++) {
       for (const [px, py] of PL[i][1]) {
-        if (leaves < MAX_LEAVES && rand() < leafChance)
+        if (leaves < MAX_LEAVES && rand() < leafAt)
           leaf({
             layer: plant.foliage,
             xof: px,
@@ -773,7 +780,7 @@ function grow(rand: () => number, noise: Noise, inks: Inks): Plant {
             wid: (x) => leafShape(x) * leafWidth,
             ben: leafBend(i, 5),
           });
-        if (flowers < MAX_FLOWERS && rand() < flowerChance) {
+        if (flowers < MAX_FLOWERS && rand() < flowerAt) {
           const hr: V3 = [
             normRand(-1, 1) * PI,
             normRand(-1, 1) * PI,
