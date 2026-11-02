@@ -12,6 +12,7 @@ import { fishDrawing1 } from "./styles/fishDrawing";
 import { fantasyMap1 } from "./styles/fantasyMap";
 import { fairIsle1 } from "./styles/fairIsle";
 import { flowLines1 } from "./styles/flowLines";
+import { fracture1 } from "./styles/fracture";
 import { girih1 } from "./styles/girih";
 import { grownTree1 } from "./styles/grownTree";
 import { guillocheRosette1 } from "./styles/guillocheRosette";
@@ -136,6 +137,7 @@ export const NEW_STYLES: readonly Style[] = [
   isometricBlocks1,
   coatOfArms1,
   polygonTiling1,
+  fracture1,
 ];
 
 // Style versions no longer pressed. They stay registered so their share links keep working: when a new

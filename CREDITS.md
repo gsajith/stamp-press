@@ -7,6 +7,7 @@ and license notice in its header. One line per style: id, project, author, licen
 - `arms1`: Armoria, Azgaar, MIT (code) and CC0 1.0 (the charges used), https://github.com/Azgaar/Armoria
 - `bloom1`: Nonflowers, Lingdong Huang, MIT, https://github.com/LingDong-/nonflowers
 - `contour1`: topographic (`index-interactive-cols` sketch), Kjetil Golid, MIT, https://github.com/kgolid/topographic
+- `crack1`: fracture, Anders Hoff (inconvergent), MIT, https://github.com/inconvergent/fracture
 - `fish1`: fishdraw, Lingdong Huang, MIT, https://github.com/LingDong-/fishdraw
 - `flow1`: streamlines, Andrei Kashcha, MIT, https://github.com/anvaka/streamlines
 - `hat1`: hatviz, Craig S. Kaplan, BSD-3-Clause, https://github.com/isohedral/hatviz
