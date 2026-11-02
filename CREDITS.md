@@ -8,6 +8,7 @@ and license notice in its header. One line per style: id, project, author, licen
 - `contour1`: topographic (`index-interactive-cols` sketch), Kjetil Golid, MIT, https://github.com/kgolid/topographic
 - `fish1`: fishdraw, Lingdong Huang, MIT, https://github.com/LingDong-/fishdraw
 - `flow1`: streamlines, Andrei Kashcha, MIT, https://github.com/anvaka/streamlines
+- `hat1`: hatviz, Craig S. Kaplan, BSD-3-Clause, https://github.com/isohedral/hatviz
 - `homage1`: Generative Artistry (six tutorials), Tim Holman, MIT, https://github.com/tholman/generative-artistry
 - `iso1`: isomer, Jordan Scales, MIT, https://github.com/jdan/isomer
 - `peep1`: Open Peeps as assembled by DiceBear, Pablo Stanley (art, CC0 1.0) and Florian Körner (code, MIT), https://github.com/dicebear/dicebear
