@@ -34,7 +34,7 @@ describe("sand lines 1", () => {
   it("draws the same pixels it shipped with", () => {
     expect(sha(pixels(1, 39, 50))).toBe("847651dd3d1744a3");
     expect(sha(pixels(2, 50, 39))).toBe("48482be0112ae06a");
-    expect(sha(pixels(5, 44, 44))).toBe("fb8249200f7a9237");
+    expect(sha(pixels(5, 44, 44))).toBe("696eb6fe2ef86aa7");
     expect(sha(pixels(4, 44, 56, "sand1w"))).toBe("3c895ef0c20880a4");
   });
 

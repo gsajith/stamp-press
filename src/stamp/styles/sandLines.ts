@@ -559,6 +559,8 @@ function letter(
 
 // How often a letter rises or drops.
 const SHIFT = 0.2;
+// Words an empty row draws before giving up, when each is too long for it.
+const WORD_TRIES = 8;
 // Pen-angle knots per letter. The original turns the pen by a random walk of thousands of tiny steps per
 // letter, about a radian in all: these knots take the same walk in a few larger steps, so it doesn't depend
 // on how many grains draw the letter.
@@ -567,7 +569,7 @@ const TURN = Math.sqrt((3 * 1.5) / KNOTS);
 
 // sand-glyphs' writer: rows of made-up words in a broad pen. A word is 3 or more letters of random widths,
 // written as one spline through all their points, so letters join like cursive. A word that won't fit the
-// row starts the next, unless the row is empty.
+// row starts the next. One too long for an empty row is dropped for a fresh word.
 function glyphs(
   sand: Sand,
   rand: () => number,
@@ -605,12 +607,18 @@ function glyphs(
     const y = top + r * lead;
     const right = W - side - (r === rows - 1 ? (1 - end) * (W - 2 * side) : 0);
     let cursor = side;
+    let tries = 0;
     for (;;) {
       const word: number[] = carried ?? nextWord();
       carried = null;
       if (cursor + word.reduce((a, b) => a + b, 0) > right) {
-        // The original carries it to the next row, and stalls on a word longer than any row: drop that one.
-        if (cursor > side) carried = word;
+        if (cursor > side) {
+          carried = word;
+          break;
+        }
+        // Too long for the empty row: the original stalls on such a word. Drop it and draw another, so the
+        // row isn't left blank, giving up after a few on a short last row.
+        if (++tries < WORD_TRIES) continue;
         break;
       }
       const path: number[] = [];
