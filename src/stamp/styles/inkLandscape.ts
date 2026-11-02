@@ -32,7 +32,8 @@ import type { Style } from "../sources";
 // with it. What changed: they take a seeded stream instead of Math.random, use exact.ts for trig, pow, exp and
 // log (ADR 0001), and push shapes to a list instead of writing SVG. The original draws its SVG in the browser;
 // here the shapes are filled by the exact-area rasterizer at the bottom, so pixels match in every browser and
-// in Node. The infinite scroll, its planner, the transmission towers and the "Pizza Hut" sign are left out.
+// in Node. Left out: the infinite scroll and its planner, flat mountains, tree07, transmission towers and the
+// "Pizza Hut" sign.
 
 type Pt = [number, number];
 type Rgb = [number, number, number];
@@ -48,8 +49,8 @@ const WHITE: Col = grey(1, 255);
 // A shape to paint, in scene units: a filled polygon, or with `line`, an open polyline that wide.
 type Shape = { pts: Pt[]; col: Col; line?: number };
 
-// The original's units are screen pixels, its scroll about 600 tall. The art's short side spans this many,
-// which puts a desk stamp's finest strokes at about a pixel.
+// The original's units are screen pixels, its scroll 800 tall. The art's short side spans this many, which
+// frames one peak and puts a desk stamp's finest strokes at about a pixel.
 const SPAN = 400;
 // How much darker than the original its greys print: its grey 100, the usual ink, comes out a quarter of the
 // way from ink to paper rather than two fifths. Stamp art is small, and the original's light greys wash out.
@@ -2134,13 +2135,10 @@ function shanShui(R: () => number, noiseRand: () => number) {
     },
     R,
     choice,
-    normRand,
     mountain,
     distMount,
     water,
     rock,
-    tree01,
-    tree02,
     tree03,
     tree04,
     tree05,
