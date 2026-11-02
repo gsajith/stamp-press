@@ -8,6 +8,7 @@ import { escherTessellation1 } from "./styles/escherTessellation";
 import { girih1 } from "./styles/girih";
 import { guillocheRosette1 } from "./styles/guillocheRosette";
 import { halftoneObject1 } from "./styles/halftoneObject";
+import { inkLandscape1 } from "./styles/inkLandscape";
 import { islandSurvey1 } from "./styles/islandSurvey";
 import { landscapeSilhouette1 } from "./styles/landscapeSilhouette";
 import { linocut1 } from "./styles/linocut";
@@ -91,7 +92,7 @@ export const STYLES: readonly Style[] = [
 
 // The new style set: generators ported from open-source artists' work (docs/research/open-source-generators.md),
 // pressed instead of STYLES when the settings pick it. Same rule as STYLES: add one line per style.
-export const NEW_STYLES: readonly Style[] = [];
+export const NEW_STYLES: readonly Style[] = [inkLandscape1];
 
 // Style versions no longer pressed. They stay registered so their share links keep working: when a new
 // version replaces a style in STYLES or NEW_STYLES, move the old one here.
