@@ -85,5 +85,5 @@ export function drawFace(
   ctx.restore();
 }
 
-// The hairline's width in stamp units: one pixel on the desk's 256 px per unit texture.
-const CUT_LINE = 1 / 256;
+// The hairline's width in stamp units: half a pixel on the desk's 256 px per unit texture.
+const CUT_LINE = 1 / 512;
