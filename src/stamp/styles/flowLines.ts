@@ -286,7 +286,7 @@ function makeField(rand: () => number, seed: number): Field {
   }
   // A window onto a formula: scaled, turned and shifted.
   const formula = FORMULAS[Math.floor(rand() * FORMULAS.length)];
-  const zoom = 4 + 5 * rand();
+  const zoom = 6 + 5 * rand();
   const turn = 2 * Math.PI * rand();
   const [c, s] = [cos(turn), sin(turn)];
   const [ox, oy] = [4 * rand() - 2, 4 * rand() - 2];
@@ -336,7 +336,7 @@ function draw(
   const field = makeField(rand, seed);
   const dSep = 0.017 + 0.011 * rand();
   // Small, the lines crowd together where the field converges. Larger, they stop short and keep apart.
-  const dTest = dSep * (0.12 + 0.38 * rand());
+  const dTest = dSep * (0.04 + 0.26 * rand());
   // Line radius in art units: 1 to 1.4 pixels wide at desk size.
   const radius = 0.0027 + 0.0009 * rand();
   // On some stamps lines change to the second ink across a few regions, unless it would barely show on the

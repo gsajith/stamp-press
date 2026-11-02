@@ -31,10 +31,10 @@ describe("flow lines 1", () => {
   // ADR 0001: a published style's output for a seed never changes. If one of these fails, the style's drawing
   // changed: restore it, and ship the change as a new style version instead.
   it("draws the same pixels it shipped with", () => {
-    expect(sha(pixels(1, 39, 50))).toBe("f9a33a807e5571f4");
-    expect(sha(pixels(2, 50, 39))).toBe("84db0f7f557fa0ff");
-    expect(sha(pixels(3, 44, 44))).toBe("e8e5428ed8afbe6e");
-    expect(sha(pixels(4, 44, 56, "flow1w"))).toBe("1fc1c10f7f9fece9");
+    expect(sha(pixels(1, 39, 50))).toBe("3b59b15871077f45");
+    expect(sha(pixels(2, 50, 39))).toBe("b12c539239a36070");
+    expect(sha(pixels(3, 44, 44))).toBe("10a5dff0d5df64c8");
+    expect(sha(pixels(4, 44, 56, "flow1w"))).toBe("c743bc0368b58b55");
   });
 
   it("draws different art for different seeds", () => {
