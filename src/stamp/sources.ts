@@ -7,6 +7,7 @@ import { botanicalLSystem1 } from "./styles/botanicalLSystem";
 import { contourBands1 } from "./styles/contourBands";
 import { crossStitch1 } from "./styles/crossStitch";
 import { escherTessellation1 } from "./styles/escherTessellation";
+import { fishDrawing1 } from "./styles/fishDrawing";
 import { fantasyMap1 } from "./styles/fantasyMap";
 import { flowLines1 } from "./styles/flowLines";
 import { girih1 } from "./styles/girih";
@@ -111,6 +112,7 @@ export const NEW_STYLES: readonly Style[] = [
   mathMarbling2,
   contourBands1,
   inkLandscape1,
+  fishDrawing1,
   fantasyMap1,
 ];
 
