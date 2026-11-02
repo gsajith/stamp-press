@@ -13,6 +13,7 @@ import { halftoneObject1 } from "./styles/halftoneObject";
 import { islandSurvey1 } from "./styles/islandSurvey";
 import { landscapeSilhouette1 } from "./styles/landscapeSilhouette";
 import { linocut1 } from "./styles/linocut";
+import { mathMarbling2 } from "./styles/mathMarbling";
 import { midCentury1 } from "./styles/midCentury";
 import { nonflowers1 } from "./styles/nonflowers";
 import { openPeeps1 } from "./styles/openPeeps";
@@ -103,6 +104,7 @@ export const NEW_STYLES: readonly Style[] = [
   openPeeps1,
   quiltBlocks1,
   plotterHomage1,
+  mathMarbling2,
   nonflowers1,
 ];
 
