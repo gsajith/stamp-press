@@ -36,6 +36,7 @@ import { risoOverprint1 } from "./styles/risoOverprint";
 import { sandLines1 } from "./styles/sandLines";
 import { seashell1 } from "./styles/seashell";
 import { skyChart1 } from "./styles/skyChart";
+import { spirograph1 } from "./styles/spirograph";
 import { specimenDrawer1 } from "./styles/specimenDrawer";
 import { steelEngraving1 } from "./styles/steelEngraving";
 import { truchetTiles1 } from "./styles/truchetTiles";
@@ -126,6 +127,7 @@ export const NEW_STYLES: readonly Style[] = [
   reactionDiffusion1,
   hatMonotile1,
   grownTree1,
+  spirograph1,
 ];
 
 // Style versions no longer pressed. They stay registered so their share links keep working: when a new
