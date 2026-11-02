@@ -20,6 +20,7 @@ import { openPeeps1 } from "./styles/openPeeps";
 import { paperDiorama1 } from "./styles/paperDiorama";
 import { paperMarbling1 } from "./styles/paperMarbling";
 import { philatelicError1 } from "./styles/philatelicError";
+import { pixelPlanet1 } from "./styles/pixelPlanet";
 import { pixelSprite1 } from "./styles/pixelSprite";
 import { plotterHomage1 } from "./styles/plotterHomage";
 import { quiltBlocks1 } from "./styles/quiltBlocks";
@@ -101,6 +102,7 @@ export const STYLES: readonly Style[] = [
 export const NEW_STYLES: readonly Style[] = [
   apparatus1,
   flowLines1,
+  pixelPlanet1,
   openPeeps1,
   quiltBlocks1,
   plotterHomage1,
