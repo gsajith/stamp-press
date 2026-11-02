@@ -19,6 +19,7 @@ import { paperMarbling1 } from "./styles/paperMarbling";
 import { philatelicError1 } from "./styles/philatelicError";
 import { pixelPlanet1 } from "./styles/pixelPlanet";
 import { pixelSprite1 } from "./styles/pixelSprite";
+import { plotterHomage1 } from "./styles/plotterHomage";
 import { quiltBlocks1 } from "./styles/quiltBlocks";
 import { risoOverprint1 } from "./styles/risoOverprint";
 import { seashell1 } from "./styles/seashell";
@@ -100,6 +101,7 @@ export const NEW_STYLES: readonly Style[] = [
   flowLines1,
   pixelPlanet1,
   quiltBlocks1,
+  plotterHomage1,
 ];
 
 // Style versions no longer pressed. They stay registered so their share links keep working: when a new
