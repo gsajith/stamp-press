@@ -93,10 +93,14 @@ function adjacent(shape: Shape, sides: number, edge: number): Shape {
   return { sides, x, y, rotation: a };
 }
 
-// tile.py's normalize: positions to 6 decimals, as a map key. Both fit in 26 bits within 30 edges of the
-// origin, so the key is one exact integer, which maps look up faster than strings.
+// tile.py's normalize: positions to 6 decimals, as a map key. Within 40 edges of the origin each rounded
+// coordinate plus 4e7 lies in [0, 8e7), so the key is one exact integer under 2^53, which maps look up faster
+// than strings. Repeats reach about 34 edges.
+const KEY_SPAN = 8e7;
 const key = (x: number, y: number) =>
-  (Math.round(x * 1e6) + 2 ** 25) * 2 ** 26 + Math.round(y * 1e6) + 2 ** 25;
+  (Math.round(x * 1e6) + KEY_SPAN / 2) * KEY_SPAN +
+  Math.round(y * 1e6) +
+  KEY_SPAN / 2;
 
 class Model {
   shapes: Shape[] = [];
