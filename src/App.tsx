@@ -5,7 +5,13 @@ import { useDetailHistory } from "./detail/useDetailHistory";
 import { UNMOVED, type View } from "./detail/view";
 import { visibleArea } from "./scene/camera";
 import Scene from "./scene/Scene";
-import { NEW_STYLES, pressStampRef } from "./stamp";
+import {
+  NEW_STYLES,
+  pressStampRef,
+  resolveStamp,
+  STYLE_CREDITS,
+  type StampRef,
+} from "./stamp";
 import "./App.css";
 
 // How long after a shared stamp lands its detail view opens, in milliseconds: long enough for StampBody to
@@ -15,6 +21,10 @@ const SHARED_OPEN_DELAY = 700;
 // A fresh reference: one of the new styles, printed in Sanzo Wada's colors. The classic styles and colors stay
 // registered, so their share links still open.
 const pressNew = () => pressStampRef(NEW_STYLES, Math.random, "wada");
+
+// The projects the stamp's style was ported from. None for a classic style.
+const creditsFor = (ref: StampRef) =>
+  STYLE_CREDITS[resolveStamp(ref)?.art.style.id ?? ""] ?? [];
 
 export default function App() {
   // One stamp flings out of the press on first load: the one a share link names, or a fresh press.
@@ -119,6 +129,7 @@ export default function App() {
         <DetailView
           id={desk.open}
           link={linkUrl(location.href, link)}
+          credits={creditsFor(desk.stamps[desk.open].ref)}
           view={view}
           onClose={close}
         />
