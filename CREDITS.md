@@ -15,4 +15,7 @@ and license notice in its header. One line per style: id, project, author, licen
 - `marble2`: Marblizer, Nick Walker, MIT, https://github.com/nickswalker/marblizer
 - `shan1`: shan-shui-inf, Lingdong Huang, MIT, https://github.com/LingDong-/shan-shui-inf
 - `isotile1`: Tactile-JS, Craig S. Kaplan, BSD-3-Clause, https://github.com/isohedral/tactile-js
+- `map1`: terrain and naming-language, Martin O'Leary, MIT, https://github.com/mewo2/terrain and
+  https://github.com/mewo2/naming-language. Its labels use the Hershey fonts (A. V. Hershey) as packaged by
+  hersheytextjs, James T, MIT, https://github.com/techninja/hersheytextjs
 - `rd1`: jsexp (`grayscott` experiment), P. M. Neila, BSD-3-Clause, https://github.com/pmneila/jsexp

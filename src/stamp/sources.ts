@@ -8,6 +8,7 @@ import { contourBands1 } from "./styles/contourBands";
 import { crossStitch1 } from "./styles/crossStitch";
 import { escherTessellation1 } from "./styles/escherTessellation";
 import { fishDrawing1 } from "./styles/fishDrawing";
+import { fantasyMap1 } from "./styles/fantasyMap";
 import { flowLines1 } from "./styles/flowLines";
 import { girih1 } from "./styles/girih";
 import { guillocheRosette1 } from "./styles/guillocheRosette";
@@ -117,6 +118,7 @@ export const NEW_STYLES: readonly Style[] = [
   fishDrawing1,
   nonflowers1,
   isohedralTiling1,
+  fantasyMap1,
   reactionDiffusion1,
 ];
 
