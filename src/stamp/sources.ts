@@ -1,4 +1,4 @@
-import { PALETTES_1, type Palette } from "./palettes";
+import { PALETTES_1, PALETTES_WADA, type Palette } from "./palettes";
 import { pick, randomSeed, subSeed } from "./random";
 import type { StampRef } from "./ref";
 import { bauhausGrid1 } from "./styles/bauhausGrid";
@@ -53,9 +53,10 @@ export type ArtSource = {
 export function styleSource(
   style: Style,
   palettes: readonly Palette[] = PALETTES_1,
+  id: string = style.id,
 ): ArtSource {
   return {
-    id: style.id,
+    id,
     palettes,
     art: (seed) => ({ style, seed: subSeed(seed, 0x2c1b3c6d) }),
   };
@@ -88,18 +89,37 @@ export const STYLES: readonly Style[] = [
   escherTessellation1,
 ];
 
+// The new style set: generators ported from open-source artists' work (docs/research/open-source-generators.md),
+// pressed instead of STYLES when the settings pick it. Same rule as STYLES: add one line per style.
+export const NEW_STYLES: readonly Style[] = [];
+
 // Style versions no longer pressed. They stay registered so their share links keep working: when a new
-// version replaces a style in STYLES, move the old one here.
+// version replaces a style in STYLES or NEW_STYLES, move the old one here.
 const RETIRED_STYLES: readonly Style[] = [];
 
-export const SOURCES: readonly ArtSource[] = [...STYLES, ...RETIRED_STYLES].map(
-  (style) => styleSource(style),
-);
+// Which colors a press prints in: PALETTES_1, or Sanzo Wada's combinations.
+export type Colors = "original" | "wada";
+
+// A style printed in Wada's palettes is its own source, `<style id>w`, so turning the setting on or off never
+// recolors a stamp someone already shared. A style that names the palettes it accepts keeps them.
+const wadaId = (style: Style) => `${style.id}w`;
+const hasWada = (style: Style) => !style.palettes;
+
+const ALL_STYLES = [...STYLES, ...NEW_STYLES, ...RETIRED_STYLES];
+export const SOURCES: readonly ArtSource[] = [
+  ...ALL_STYLES.map((style) => styleSource(style)),
+  ...ALL_STYLES.filter(hasWada).map((style) =>
+    styleSource(style, PALETTES_WADA, wadaId(style)),
+  ),
+];
 
 // A new press: a style picked at random from `styles`, then a fresh seed that drives the stamp within it.
 export function pressStampRef(
   styles: readonly Style[] = STYLES,
   rand: () => number = Math.random,
+  colors: Colors = "original",
 ): StampRef {
-  return { source: pick(styles, rand).id, seed: randomSeed() };
+  const style = pick(styles, rand);
+  const source = colors === "wada" && hasWada(style) ? wadaId(style) : style.id;
+  return { source, seed: randomSeed() };
 }

@@ -42,6 +42,14 @@ _Avoid_: Permalink, URL
 A shared set of two to four inks and a paper tone that a stamp is printed in, picked by its seed.
 _Avoid_: Theme, color scheme
 
+**Colors**:
+Which palettes a press prints in: the original ones or Sanzo Wada's combinations. A style printed in Wada's palettes is its own art source, `<style>w` such as `land1w`, so changing the setting never recolors a shared stamp.
+_Avoid_: Theme
+
+**Style set**:
+The styles a press picks from: the classic set, or the new set ported from open-source artists' generators. Chosen in the settings. Every style stays reachable by share link whichever set is chosen.
+_Avoid_: Mode, pack
+
 **Drop**:
 One stamp flung out of the press, from the button just in front of the viewer, arcing away over the desk and fluttering down to land art up on its spot. A lone drop lands a step away from the previous stamp, and the camera follows it. A drop in a burst lands somewhere on the desk already on screen.
 _Avoid_: Spawn, pull, roll

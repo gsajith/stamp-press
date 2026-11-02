@@ -2,14 +2,16 @@
 export { formatStampRef, parseStampRef, type StampRef } from "./ref";
 export { artInset, drawArt, drawFace, resolveStamp, type Stamp } from "./stamp";
 export {
+  NEW_STYLES,
   pressStampRef,
   SOURCES,
   STYLES,
   styleSource,
   type ArtSource,
+  type Colors,
   type Style,
 } from "./sources";
-export { PALETTES_1, type Palette } from "./palettes";
+export { PALETTES_1, PALETTES_WADA, type Palette } from "./palettes";
 export { randomSeed, stream } from "./random";
 export {
   punchGeometry,
