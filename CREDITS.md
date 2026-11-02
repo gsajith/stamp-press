@@ -14,3 +14,4 @@ and license notice in its header. One line per style: id, project, author, licen
 - `quilt1`: tilework and p5ycho (patchwork sketches), Kjetil Golid, MIT, https://github.com/kgolid/tilework, https://github.com/kgolid/p5ycho
 - `marble2`: Marblizer, Nick Walker, MIT, https://github.com/nickswalker/marblizer
 - `shan1`: shan-shui-inf, Lingdong Huang, MIT, https://github.com/LingDong-/shan-shui-inf
+- `isotile1`: Tactile-JS, Craig S. Kaplan, BSD-3-Clause, https://github.com/isohedral/tactile-js
