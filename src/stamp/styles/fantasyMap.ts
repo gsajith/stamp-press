@@ -660,14 +660,24 @@ function mergeSegments(segs: readonly number[]): number[][] {
   return paths;
 }
 
-// Pulls each inner point a quarter of the way toward each neighbour, keeping the ends, so a path stops zigzagging
-// from node to node. Points are flat [x, y, x, y, ...].
+// Pulls each point a quarter of the way toward each neighbour, so a path stops zigzagging from node to node.
+// Points are flat [x, y, x, y, ...]. An open path keeps its ends, so rivers still meet where they join. A closed
+// one, which ends where it starts, is smoothed all the way round, so an island has no corner where it closes.
 function relaxPath(pts: number[]): number[] {
+  const n = pts.length / 2;
+  const closed =
+    n > 2 && pts[0] === pts[2 * n - 2] && pts[1] === pts[2 * n - 1];
   const out = pts.slice();
-  for (let k = 2; k + 2 < pts.length; k += 2)
+  for (let k = closed ? 0 : 1; k < n - 1; k++) {
+    // On a closed path the point before the start is the one before the repeated end.
+    const prev = k > 0 ? k - 1 : n - 2;
     for (const c of [0, 1])
-      out[k + c] =
-        0.25 * pts[k - 2 + c] + 0.5 * pts[k + c] + 0.25 * pts[k + 2 + c];
+      out[2 * k + c] =
+        0.25 * pts[2 * prev + c] +
+        0.5 * pts[2 * k + c] +
+        0.25 * pts[2 * k + 2 + c];
+  }
+  if (closed) [out[2 * n - 2], out[2 * n - 1]] = [out[0], out[1]];
   return out;
 }
 

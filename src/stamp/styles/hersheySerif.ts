@@ -1,5 +1,24 @@
-// Hershey's serif ("Roman complex") stroke font, for the labels of styles that compute their own pixels. Glyph
-// data from hersheytextjs (github.com/techninja/hersheytextjs), Copyright (c) 2014 James T, MIT License.
+// Hershey's serif ("Roman complex") stroke font, for the labels of styles that compute their own pixels.
+// Published styles draw with it, so ADR 0001 freezes it: changing a glyph, the spacing or the layout changes their
+// stamps. A different font or setting ships as a new module.
+//
+// Glyph data from hersheytextjs (github.com/techninja/hersheytextjs), Copyright (c) 2014 James T, under the MIT
+// License:
+//
+//   Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
+//   documentation files (the "Software"), to deal in the Software without restriction, including without
+//   limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the
+//   Software, and to permit persons to whom the Software is furnished to do so, subject to the following
+//   conditions:
+//
+//   The above copyright notice and this permission notice shall be included in all copies or substantial portions
+//   of the Software.
+//
+//   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED
+//   TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
+//   THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF
+//   CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+//   DEALINGS IN THE SOFTWARE.
 //
 // The Hershey Fonts were originally created by Dr. A. V. Hershey while working at the U. S. National Bureau of
 // Standards. The format of the font data in this distribution was originally created by James Hurt, Cognition,
