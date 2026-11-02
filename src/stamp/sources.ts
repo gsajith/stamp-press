@@ -18,6 +18,7 @@ import { landscapeSilhouette1 } from "./styles/landscapeSilhouette";
 import { linocut1 } from "./styles/linocut";
 import { mathMarbling2 } from "./styles/mathMarbling";
 import { midCentury1 } from "./styles/midCentury";
+import { nonflowers1 } from "./styles/nonflowers";
 import { openPeeps1 } from "./styles/openPeeps";
 import { paperDiorama1 } from "./styles/paperDiorama";
 import { paperMarbling1 } from "./styles/paperMarbling";
@@ -112,6 +113,7 @@ export const NEW_STYLES: readonly Style[] = [
   contourBands1,
   inkLandscape1,
   fishDrawing1,
+  nonflowers1,
 ];
 
 // Style versions no longer pressed. They stay registered so their share links keep working: when a new
