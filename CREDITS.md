@@ -5,3 +5,4 @@ and license notice in its header. One line per style: id, project, author, licen
 
 - `apparat1`: p5ycho (`apparat4` sketch), Kjetil Golid, MIT, https://github.com/kgolid/p5ycho
 - `flow1`: streamlines, Andrei Kashcha, MIT, https://github.com/anvaka/streamlines
+- `hat1`: hatviz, Craig S. Kaplan, BSD-3-Clause, https://github.com/isohedral/hatviz
