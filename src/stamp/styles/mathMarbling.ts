@@ -27,8 +27,8 @@
 // the bath. A pixel's color comes from running its position back through the inverse maps, newest first,
 // until it lands inside a drop. Its look is bold flat bands with crisp edges, pulled into ogees, hearts and
 // swirls. This port keeps its operations and their falloff constants, and picks a recipe from the seed:
-// Marblizer's own banner and tutorial compositions, and the classic stone, feather, nonpareil and bouquet,
-// plus a swirl, built from its concentric drops and combs.
+// Marblizer's banner, its tutorial with one side mirrored, and the classic stone, feather, nonpareil and
+// bouquet, plus a swirl, built from its concentric drops and combs.
 //
 // Only IEEE-exact arithmetic (ADR 0001): sine and cosine come from exact.ts. Sizes are fractions of the art's
 // short side, and Marblizer's pixel constants are scaled to match.
@@ -75,7 +75,7 @@ const LINE = 1;
 const WAVY = 2;
 const TURN = 3;
 const STRIDE = 9;
-// The radius inside which a turn turns everything by the same angle.
+// The radius inside which a turn divides its arc length by this, not by the distance from its center.
 const CORE = 0.02;
 
 // Marblizer folds a distance onto its nearest tine, out to `tines` tines, past which it keeps growing.
@@ -143,7 +143,7 @@ function undo(
       const e = ops[o + 3] * len - ops[o + 4];
       const d = fold(e < 0 ? -e : e, ops[o + 5], ops[o + 6]);
       // A turn keeps each point's distance from the center, so undoing it is the same turn backward. Its
-      // angle is arc length over radius, held level inside CORE, where it would wind without end.
+      // angle is arc length over radius. Inside CORE it divides by CORE instead, since it would wind without end.
       const theta = -ops[o + 7] / (d + ops[o + 8]) / (len < CORE ? CORE : len);
       const c = cos(theta);
       const s = sin(theta);
@@ -292,8 +292,9 @@ function draw(
     line(cx + uy * off, cy - ux * off, -ux, -uy, 0, 0, drag);
     wavy(-uy, ux, between(0.03, 0.06), between(0.45, 0.8));
   } else if (recipe === "heart") {
-    // Marblizer's tutorial: concentric bands raked with arcs from two opposite edges' midpoints, at four
-    // radii, which pulls the bands into hearts.
+    // After Marblizer's tutorial: concentric bands raked with arcs from two opposite edges' midpoints, at
+    // four radii. The tutorial turns both sides the same way, an S. Here one side is mirrored, which pulls
+    // the bands into hearts.
     target(cx, cy, between(0.045, 0.07), 1.3);
     const side = rand() < 0.5;
     const half = side ? W / 2 : H / 2;
