@@ -6,6 +6,7 @@ import { bauhausGrid1 } from "./styles/bauhausGrid";
 import { botanicalLSystem1 } from "./styles/botanicalLSystem";
 import { crossStitch1 } from "./styles/crossStitch";
 import { escherTessellation1 } from "./styles/escherTessellation";
+import { fairIsle1 } from "./styles/fairIsle";
 import { flowLines1 } from "./styles/flowLines";
 import { girih1 } from "./styles/girih";
 import { guillocheRosette1 } from "./styles/guillocheRosette";
@@ -104,6 +105,7 @@ export const NEW_STYLES: readonly Style[] = [
   quiltBlocks1,
   plotterHomage1,
   mathMarbling2,
+  fairIsle1,
 ];
 
 // Style versions no longer pressed. They stay registered so their share links keep working: when a new
