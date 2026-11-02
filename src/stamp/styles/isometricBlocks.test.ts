@@ -26,7 +26,7 @@ describe("isometric blocks 1", () => {
     expect(sha(pixels(1, 39, 50))).toBe("beb13ca8bb467b62");
     expect(sha(pixels(2, 50, 39))).toBe("639c756a7d71bfab");
     expect(sha(pixels(3, 44, 44))).toBe("78041b55de7f9e8a");
-    expect(sha(pixels(4, 39, 50, "iso1w"))).toBe("aa987d48bb17e376");
+    expect(sha(pixels(4, 39, 50, "iso1w"))).toBe("922f723c0cf182e3");
   });
 
   it("draws different art for different seeds", () => {

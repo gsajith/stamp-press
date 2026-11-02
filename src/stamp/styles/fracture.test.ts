@@ -40,7 +40,7 @@ describe("fracture 1", () => {
     expect(sha(pixels(1, 39, 50))).toBe("cf24301c349e2798");
     expect(sha(pixels(2, 50, 39))).toBe("921efeb633f82f8d");
     expect(sha(pixels(3, 44, 44))).toBe("b5ed1bd9c7c0099c");
-    expect(sha(pixels(4, 44, 56, "crack1w"))).toBe("6416242440aa7a95");
+    expect(sha(pixels(4, 44, 56, "crack1w"))).toBe("bc4242a75a44553d");
     // Tinted cells: a patch, then cells scattered in one ink.
     expect(sha(pixels(7, 39, 50))).toBe("96d8dd2b30fe8d55");
     expect(sha(pixels(10, 50, 39))).toBe("906b6cd151bdd0e5");

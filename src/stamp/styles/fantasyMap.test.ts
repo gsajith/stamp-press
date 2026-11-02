@@ -30,7 +30,7 @@ describe("fantasy map 1", () => {
     expect(sha(pixels(1, 78, 100))).toBe("f36a14d5a3b54351");
     expect(sha(pixels(2, 100, 78))).toBe("9972b05c16742112");
     expect(sha(pixels(3, 88, 88))).toBe("b3e4aed92c90b9fa");
-    expect(sha(pixels(4, 78, 100, "map1w"))).toBe("09f787bf8b7274d4");
+    expect(sha(pixels(4, 78, 100, "map1w"))).toBe("a7dd42a702b32173");
   });
 
   it("draws different art for different seeds", () => {

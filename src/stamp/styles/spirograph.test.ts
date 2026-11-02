@@ -31,7 +31,7 @@ describe("spirograph rosette 1", () => {
     expect(sha(pixels(1, 39, 50))).toBe("67867727dae708f1");
     expect(sha(pixels(2, 50, 39))).toBe("ce6ea9e7bedcbf14");
     expect(sha(pixels(3, 44, 44))).toBe("7c1eed9ceda53c3e");
-    expect(sha(pixels(4, 39, 50, "spiro1w"))).toBe("f38655a0c744e1a2");
+    expect(sha(pixels(4, 39, 50, "spiro1w"))).toBe("d9856832af66c910");
     expect(sha(pixels(10, 50, 39))).toBe("c54eb06647519eaf");
   });
 

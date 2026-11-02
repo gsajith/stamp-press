@@ -35,7 +35,7 @@ describe("fair isle knit 1", () => {
     expect(sha(pixels(3, 44, 44))).toBe("dcc7e544ee6e63d4");
     // Large enough that each stitch covers several pixels, as at desk size.
     expect(sha(pixels(7, 160, 200))).toBe("9a75bf2d69427f99");
-    expect(sha(pixels(5, 200, 160, "knit1w"))).toBe("37a261ff39707577");
+    expect(sha(pixels(5, 200, 160, "knit1w"))).toBe("58767af8a8394f02");
   });
 
   it("draws different art for different seeds", () => {

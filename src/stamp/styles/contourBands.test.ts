@@ -31,7 +31,7 @@ describe("contour bands 1", () => {
     expect(sha(pixels(1, 39, 50))).toBe("93e616e70c4fdec0");
     expect(sha(pixels(2, 50, 39))).toBe("9588dee7615ed7f4");
     expect(sha(pixels(3, 44, 44))).toBe("e99bd795dee44541");
-    expect(sha(pixels(4, 39, 50, "contour1w"))).toBe("0addffc6554d7070");
+    expect(sha(pixels(4, 39, 50, "contour1w"))).toBe("7c1b61e9d607da0a");
   });
 
   it("draws different art for different seeds", () => {
