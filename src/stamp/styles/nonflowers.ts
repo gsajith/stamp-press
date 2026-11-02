@@ -315,6 +315,7 @@ function grow(rand: () => number, noise: Noise, inks: Inks): Plant {
     col: Tones;
     cof?: (x: number) => number;
     ben: (x: number) => V3;
+    rim?: number[];
   };
   function leaf({
     layer,
@@ -329,6 +330,7 @@ function grow(rand: () => number, noise: Noise, inks: Inks): Plant {
     col,
     cof = (x) => x,
     ben,
+    rim = lineColor(0.3),
   }: LeafArgs): V3[] {
     const orient = euler(rot);
     let disp: V3 = [0, 0, 0];
@@ -438,8 +440,8 @@ function grow(rand: () => number, noise: Noise, inks: Inks): Plant {
       stroke(layer, P.map(at), lineColor(0.3));
     }
     // The outline, in a lighter line.
-    stroke(layer, L.map(at), lineColor(0.3));
-    stroke(layer, R.map(at), lineColor(0.3));
+    stroke(layer, L.map(at), rim);
+    stroke(layer, R.map(at), rim);
     return P;
   }
 
@@ -680,6 +682,9 @@ function grow(rand: () => number, noise: Noise, inks: Inks): Plant {
   // A flower at (x, y) facing `hhr`: a ring of petals and a ring of short inner ones, all opening by `op`.
   // Flowers are larger than the original's, so they read on a desk stamp.
   let flowers = 0;
+  // Petals are outlined softly in their own color, as the original's are in olive.
+  const rim = [0, 1, 2].map((i) => (inks.flower[0][i] + inks.line[i]) / 510);
+  rim.push(0.3);
   function flower(x: number, y: number, hhr: V3, size: number) {
     flowers++;
     size *= BLOOM;
@@ -700,6 +705,7 @@ function grow(rand: () => number, noise: Noise, inks: Inks): Plant {
         col: flowerColor,
         cof: flowerColorCurve,
         ben,
+        rim,
       });
       leaf({
         layer: plant.flowers,
