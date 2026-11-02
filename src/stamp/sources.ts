@@ -4,6 +4,7 @@ import type { StampRef } from "./ref";
 import { apparatus1 } from "./styles/apparatus";
 import { bauhausGrid1 } from "./styles/bauhausGrid";
 import { botanicalLSystem1 } from "./styles/botanicalLSystem";
+import { contourBands1 } from "./styles/contourBands";
 import { crossStitch1 } from "./styles/crossStitch";
 import { escherTessellation1 } from "./styles/escherTessellation";
 import { fishDrawing1 } from "./styles/fishDrawing";
@@ -105,6 +106,7 @@ export const NEW_STYLES: readonly Style[] = [
   quiltBlocks1,
   plotterHomage1,
   mathMarbling2,
+  contourBands1,
   fishDrawing1,
 ];
 
