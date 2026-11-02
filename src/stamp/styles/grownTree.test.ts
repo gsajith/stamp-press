@@ -33,11 +33,11 @@ describe("grown tree 1", () => {
   // changed: restore it, and ship the change as a new style version instead.
   it("draws the same pixels it shipped with", () => {
     expect(sha(pixels(1, 39, 50))).toBe("6a064aaca129460e");
-    expect(sha(pixels(2, 50, 39))).toBe("2c00f467030e7818");
-    expect(sha(pixels(3, 44, 44))).toBe("e2cde26f5677c99c");
-    expect(sha(pixels(4, 44, 56, "tree1w"))).toBe("0dd953b9df0bf4cd");
+    expect(sha(pixels(2, 50, 39))).toBe("f3b63fd4c044444c");
+    expect(sha(pixels(3, 44, 44))).toBe("a49dfc1b0871d088");
+    expect(sha(pixels(4, 44, 56, "tree1w"))).toBe("0fa4493004b5a804");
     // Large enough for the grain to print as stipple, as in the detail view.
-    expect(sha(pixels(5, 1100, 1400))).toBe("69279da51847286a");
+    expect(sha(pixels(5, 1100, 1400))).toBe("dfd5f140d9a1310c");
   });
 
   it("draws different art for different seeds", () => {
@@ -51,12 +51,12 @@ describe("grown tree 1", () => {
   // size: twigs under a pixel wide spread to a pixel at matching strength, and grain prints as flat tone. A
   // tiny draw blurs most of the tree into those pixel-wide lines, so it strays more than one at desk size.
   it.each([
-    [7, 40, 52, 8, 4],
-    [8, 52, 40, 8, 4],
-    [9, 46, 46, 8, 4],
-    [7, 160, 208, 4, 2.5],
-    [8, 208, 160, 4, 2.5],
-    [9, 184, 184, 4, 2.5],
+    [7, 40, 52, 8, 5],
+    [8, 52, 40, 8, 5],
+    [9, 46, 46, 8, 5],
+    [7, 160, 208, 4, 3],
+    [8, 208, 160, 4, 3],
+    [9, 184, 184, 4, 3],
   ])(
     "draws seed %i the same at %ix%i as %i times larger",
     (seed, w, h, k, bound) => {

@@ -227,7 +227,8 @@ function draw(
       probScale: BRANCH_PROB_SCALE * (0.25 + 0.3 * rand()),
     });
 
-  // Fits the tree into the art: the trunk's foot just below the bottom edge, the crown inside the margins.
+  // Fits the tree into the art: the trunk's foot a trunk radius below the bottom edge, the crown inside the
+  // margins. The foot's hidden radius leaves -INIT_BRANCH - minY of the tree's height in view.
   let [minX, maxX, minY] = [-INIT_BRANCH, INIT_BRANCH, 0];
   for (let i = 0; i < ops.length; i += OP) {
     const [x, y, r] = [ops[i + 4], ops[i + 5], ops[i + 8]];
@@ -237,7 +238,7 @@ function draw(
   }
   const [W, H] = [width / unit, height / unit];
   const k = Math.min(
-    (H - TOP) / (INIT_BRANCH - minY),
+    (H - TOP) / (-INIT_BRANCH - minY),
     (W - 2 * SIDE) / (maxX - minX),
   );
   // Pixels per tree unit, and where the tree's origin lands.
