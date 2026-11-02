@@ -2,7 +2,7 @@
 // sketches. Half the seeds lay a grid of single blocks, mostly half- and quarter-square triangles with a few
 // of tilework's circle tiles, each block in two or three of the palette's colors. The other half use
 // patchwork4's layout: the quilt splits recursively into rectangles, and each rectangle repeats one 2x2 set of
-// patches in two inks on the paper, so large fields of one pattern sit beside small odd blocks. Faint running
+// patches in two inks on the paper, so large fields of one pattern sit beside small blocks of others. Faint running
 // stitches sometimes follow the seams, too thin to read at desk size but clear when zoomed in.
 //
 // Like the other styles it computes every pixel itself, in units of the patch grid, so it is resolution
@@ -41,11 +41,6 @@ const rgb = (hex: string): Rgb => [
   parseInt(hex.slice(3, 5), 16),
   parseInt(hex.slice(5, 7), 16),
 ];
-const mix = (a: Rgb, b: Rgb, t: number): Rgb => [
-  a[0] + (b[0] - a[0]) * t,
-  a[1] + (b[1] - a[1]) * t,
-  a[2] + (b[2] - a[2]) * t,
-];
 
 // ---- Shapes ----
 // Each is a region of a unit patch, x right and y down, as Golid's p5 paths draw it. Kinds are numbers and one
@@ -59,14 +54,13 @@ const R = {
   diagonal: 5,
   triangle: 6,
   house: 7,
-  arrow: 8,
-  semi: 9,
-  quarter: 10,
+  semi: 8,
+  quarter: 9,
   // tilework's own tiles
-  halfTriangle: 11,
-  bigQuarter: 12,
-  disc: 13,
-  smallDisc: 14,
+  halfTriangle: 10,
+  bigQuarter: 11,
+  disc: 12,
+  smallDisc: 13,
 } as const;
 type Kind = (typeof R)[keyof typeof R];
 
@@ -89,10 +83,6 @@ function inKind(kind: Kind, x: number, y: number): boolean {
       return y >= 0 && y < x && y < 1 - x;
     case R.house:
       return x >= 0 && x < 0.5 && y >= 0 && y < 0.5 + x;
-    case R.arrow: {
-      const d = Math.abs(x - 0.5);
-      return d <= 0.5 && y >= 0.5 - d && y < 1 - d;
-    }
     case R.semi:
       return y >= 0 && (x - 0.5) * (x - 0.5) + y * y < 0.25;
     case R.quarter:
@@ -141,7 +131,6 @@ const diagonalStripes: Patch = [
   [shape(R.diagonal, 0, 0, 0)],
 ];
 const skewed: Patch = [[shape(R.house, 0, 0, 0)], [shape(R.house, 0, 0, 2)]];
-const wedge: Patch = [[shape(R.triangle, 0, 0, 0)], [shape(R.arrow, 0, 0, 0)]];
 const spruce: Patch = [
   [shape(R.triangle, 0, 0, 0), shape(R.triangle, 0, 0.5, 0)],
   [shape(R.corner, 0, 0.5, 2), shape(R.corner, 0.5, 0, 3)],
@@ -159,25 +148,6 @@ const yoyo: Patch = [[shape(R.semi, 0, 0, 0)], [shape(R.semi, 0, 0, 2)]];
 const ellAndSquare: Patch = [
   [shape(R.smallSquare, 0, 0, 0)],
   [shape(R.ell, 0, 0, 2)],
-];
-const trisquare: Patch = [
-  [shape(R.square, 0, 0, 0)],
-  [shape(R.corner, 0, 0, 1), shape(R.corner, 0, 0, 3)],
-];
-
-const PATCHES: readonly Patch[] = [
-  checkered,
-  halfNHalf,
-  diagonalStripes,
-  skewed,
-  wedge,
-  spruce,
-  corners,
-  kings,
-  kingsFlipped,
-  yoyo,
-  ellAndSquare,
-  trisquare,
 ];
 
 // patchwork4's patch sets: four patches and their turns, laid clockwise from the top left of a 2x2 block.
@@ -274,8 +244,9 @@ function tileworkCells(
   });
 }
 
-// patchwork4's fill_block: splits the quilt into rectangles, each one patch or one repeating patch set, in two
-// inks on the paper.
+// patchwork4's fill_block: splits the quilt into rectangles, each one repeating patch set in two inks on the
+// paper. Splits leave both sides at least two patches wide, so fill_block's branch for a lone 1x1 patch never
+// runs here, nor in patchwork4's 16x16 quilt, and isn't ported.
 function patchworkCells(
   g: number,
   inkCount: number,
@@ -286,11 +257,6 @@ function patchworkCells(
   const twoInks = (): [number, number, number] => {
     const [a, b] = shuffled(inks, rand);
     return [0, a, b];
-  };
-  const square = (x: number, y: number) => {
-    const colors = twoInks();
-    const turns = Math.floor(rand() * 4);
-    cells[y * g + x] = { patch: pick(PATCHES, rand), turns, colors };
   };
   const pattern = (x: number, y: number, w: number, h: number) => {
     const set = pick(PATCH_SETS, rand);
@@ -308,8 +274,7 @@ function patchworkCells(
       }
   };
   const block = (x: number, y: number, w: number, h: number) => {
-    if (w === 1 && h === 1) square(x, y);
-    else if (w <= 3 && h <= 3) pattern(x, y, w, h);
+    if (w <= 3 && h <= 3) pattern(x, y, w, h);
     else if (rand() < 0.7) {
       const tieBreak = rand();
       if (w > h || (w === h && tieBreak > 0.7)) {
@@ -404,25 +369,27 @@ function draw(
     for (let x = 0; x < width; x++) {
       const c = y * (width + 1) + x;
       const c0 = corners[c];
-      let color: Rgb;
+      let red: number, green: number, blue: number;
       if (
         !tiny &&
         c0 === corners[c + 1] &&
         c0 === corners[c + width + 1] &&
         c0 === corners[c + width + 2]
       )
-        color = colors[c0];
+        [red, green, blue] = colors[c0];
       else {
-        color = [0, 0, 0];
+        red = green = blue = 0;
         for (let sy = 0; sy < S; sy++)
           for (let sx = 0; sx < S; sx++) {
             const s =
               colors[colorAt(gx(x + (sx + 0.5) / S), gy(y + (sy + 0.5) / S))];
-            color[0] += s[0];
-            color[1] += s[1];
-            color[2] += s[2];
+            red += s[0];
+            green += s[1];
+            blue += s[2];
           }
-        color = [color[0] / (S * S), color[1] / (S * S), color[2] / (S * S)];
+        red /= S * S;
+        green /= S * S;
+        blue /= S * S;
       }
       if (stitches) {
         const cover = Math.min(
@@ -433,13 +400,16 @@ function draw(
           // Dark thread on the paper, paper-colored thread on the inks.
           const under = colorAt(gx(x + 0.5), gy(y + 0.5));
           const thread = colors[under === 0 ? 1 : 0];
-          color = mix(color, thread, cover * STITCH.strength);
+          const t = cover * STITCH.strength;
+          red += (thread[0] - red) * t;
+          green += (thread[1] - green) * t;
+          blue += (thread[2] - blue) * t;
         }
       }
       const p = (y * width + x) * 4;
-      data[p] = Math.round(color[0]);
-      data[p + 1] = Math.round(color[1]);
-      data[p + 2] = Math.round(color[2]);
+      data[p] = Math.round(red);
+      data[p + 1] = Math.round(green);
+      data[p + 2] = Math.round(blue);
       data[p + 3] = 255;
     }
   ctx.putImageData(image, 0, 0);
