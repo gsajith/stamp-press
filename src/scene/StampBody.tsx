@@ -4,6 +4,7 @@ import {
   type RapierCollider,
   type RapierRigidBody,
   RigidBody,
+  useAfterPhysicsStep,
   useRapier,
 } from "@react-three/rapier";
 import {
@@ -101,6 +102,13 @@ export const StampBody = memo(function StampBody({
   const flight = useRef<Flight>(null);
   const settling = useRef(0);
   const [fixed, setFixed] = useState(false);
+  // Whether physics has stepped since the stamp jumped from where it was parked to the press. Until it has,
+  // react-three-rapier blends the drawn position between the two, which puts the stamp right in front of the
+  // camera for a frame, so it stays hidden.
+  const stepped = useRef(false);
+  useAfterPhysicsStep(() => {
+    if (phase.current !== "press") stepped.current = true;
+  });
   useFrame(({ camera, clock, gl }, dt) => {
     const b = body.current;
     const c = collider.current;
@@ -115,10 +123,10 @@ export const StampBody = memo(function StampBody({
         : launchPoint(camera, gl.domElement, press.current);
       flight.current = { from, ...aimFling(from, drop.spot), t: 0, at: from };
       b.setTranslation({ x: from[0], y: from[1], z: from[2] }, true);
-      // The mesh shows from the next frame, once it has moved to the launch.
+      // The mesh shows once physics has stepped from the launch.
       return;
     }
-    a.visible = !lifted;
+    a.visible = stepped.current && !lifted;
     if (phase.current === "landed") {
       if (!fixed) {
         settling.current += dt;
