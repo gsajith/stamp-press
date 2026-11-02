@@ -33,6 +33,7 @@ import { philatelicError1 } from "./styles/philatelicError";
 import { pixelPlanet1 } from "./styles/pixelPlanet";
 import { pixelSprite1 } from "./styles/pixelSprite";
 import { plotterHomage1 } from "./styles/plotterHomage";
+import { polygonTiling1 } from "./styles/polygonTiling";
 import { quiltBlocks1 } from "./styles/quiltBlocks";
 import { reactionDiffusion1 } from "./styles/reactionDiffusion";
 import { risoOverprint1 } from "./styles/risoOverprint";
@@ -134,6 +135,7 @@ export const NEW_STYLES: readonly Style[] = [
   fairIsle1,
   isometricBlocks1,
   coatOfArms1,
+  polygonTiling1,
 ];
 
 // Style versions no longer pressed. They stay registered so their share links keep working: when a new
