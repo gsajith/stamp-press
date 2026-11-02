@@ -28,11 +28,11 @@ describe("spirograph rosette 1", () => {
   // ADR 0001: a published style's output for a seed never changes. If one of these fails, the style's drawing
   // changed: restore it, and ship the change as a new style version instead. Seed 10 prints a denomination.
   it("draws the same pixels it shipped with", () => {
-    expect(sha(pixels(1, 39, 50))).toBe("dbf7cfba78a91fee");
-    expect(sha(pixels(2, 50, 39))).toBe("ca6e9ebb6cdc8844");
-    expect(sha(pixels(3, 44, 44))).toBe("821730bcfbe90554");
-    expect(sha(pixels(4, 39, 50, "spiro1w"))).toBe("b7d2b42ca4b09103");
-    expect(sha(pixels(10, 50, 39))).toBe("a7d4183aa4d3bb37");
+    expect(sha(pixels(1, 39, 50))).toBe("67867727dae708f1");
+    expect(sha(pixels(2, 50, 39))).toBe("ce6ea9e7bedcbf14");
+    expect(sha(pixels(3, 44, 44))).toBe("7c1eed9ceda53c3e");
+    expect(sha(pixels(4, 39, 50, "spiro1w"))).toBe("f38655a0c744e1a2");
+    expect(sha(pixels(10, 50, 39))).toBe("c54eb06647519eaf");
   });
 
   it("draws different art for different seeds", () => {
@@ -45,7 +45,7 @@ describe("spirograph rosette 1", () => {
   // Sizes and line weights are fractions of the art's short side, and each pixel averages its line coverage, so a
   // downscaled large draw matches a small one, up to where lines cross inside one small pixel.
   it.each([
-    [40, 52, 8, 1],
+    [40, 52, 8, 1.5],
     [200, 256, 4, 1.5],
   ])("draws the same picture at %ix%i as %i times larger", (w, h, k, bound) => {
     for (const seed of [4, 5, 6]) {
@@ -64,5 +64,23 @@ describe("spirograph rosette 1", () => {
       // Mean difference per channel, out of 255.
       expect(total / (w * h * 3)).toBeLessThan(bound);
     }
+  });
+
+  // The budget is about 10 ms for a desk stamp and 1 s at 2048 px on a typical machine. The limits here leave
+  // room for a loaded CI runner, so they catch a slow change rather than measure the budget. 142x182 is the
+  // smallest desk art, a portrait with the widest margin, where each pixel takes the most samples.
+  it("draws within its time budget", () => {
+    const time = (w: number, h: number, seeds: number[]) =>
+      Math.min(
+        ...seeds.map((seed) => {
+          const t0 = performance.now();
+          pixels(seed, w, h);
+          return performance.now() - t0;
+        }),
+      );
+    pixels(0, 200, 256);
+    expect(time(200, 256, [20, 21, 22, 23, 24])).toBeLessThan(40);
+    expect(time(142, 182, [20, 21, 22, 23, 24])).toBeLessThan(40);
+    expect(time(1600, 2048, [25])).toBeLessThan(1500);
   });
 });

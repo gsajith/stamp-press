@@ -67,8 +67,9 @@ type Layer = {
   color: Rgb;
 };
 
-// A fine engraved line: about 1.2 pixels wide on the desk, where the art's short side is about 200 pixels.
-const FINE = 0.003;
+// A fine engraved line's full width: 0.7 to 1.1 pixels on the desk, where the art's short side is 142 to 225 pixels
+// across margin and full-bleed stamps.
+const FINE = 0.005;
 
 // A layer reaching `extent` from the middle, its circles' centers `ratio` times their radius from it. Below 1
 // every circle rings the middle, at 1 they all pass through it, above 1 they leave a hole.
@@ -202,20 +203,21 @@ function draw(
   // The outer layer takes the darkest ink, the middle the second, the core the darkest or the lightest.
   const coreInk = rand() < 0.5 ? ink[0] : last;
   const layers: Layer[] = [
-    layer(e0, 0.35 + 0.95 * rand(), int(rand, 30, 64), 1, rand, ink[0]),
+    layer(e0, 0.35 + 0.95 * rand(), int(rand, 24, 48), 1, rand, ink[0]),
     midBold
       ? layer(e1, 0.5 + 0.8 * rand(), int(rand, 5, 10), 2.5, rand, ink[1])
-      : layer(e1, 0.3 + 1.2 * rand(), int(rand, 20, 48), 1, rand, ink[1]),
+      : layer(e1, 0.3 + 1.2 * rand(), int(rand, 16, 36), 1, rand, ink[1]),
     coreBold
       ? layer(e2, 0.4 + 1.2 * rand(), int(rand, 5, 9), 2, rand, coreInk)
-      : layer(e2, 0.3 + 1.3 * rand(), int(rand, 10, 24), 1, rand, coreInk),
+      : layer(e2, 0.3 + 1.3 * rand(), int(rand, 8, 18), 1, rand, coreInk),
   ];
   if (value) layers.push(layer(knock, 0, 1, 1.5, rand, ink[0]));
 
   // Fine lines at a small size need more than one sample per pixel to keep their weight and shape, so each
-  // pixel averages an n by n grid of samples, enough that a sample spans at most 1/400 of the short side.
+  // pixel averages an n by n grid of samples, enough that a sample spans at most 1/280 of the short side. That
+  // keeps every desk stamp, margin ones included, at 2 by 2.
   const unit = Math.min(width, height);
-  const n = Math.max(1, Math.ceil(400 / unit));
+  const n = Math.max(1, Math.ceil(280 / unit));
   // Sample units from here on: the art's short side is `size` samples.
   const size = unit * n;
   const [cols, rows] = [width * n, height * n];
@@ -324,7 +326,7 @@ function draw(
 
   if (value) {
     // The numeral in the darkest ink, sized to fit inside the keyline.
-    const h = (value.length > 1 ? 0.95 : 1.15) * clear;
+    const h = (value.length > 1 ? 0.9 : 1.15) * clear;
     const segments = numeral(value, mx, my, h);
     const stroke = 0.075 * h;
     const box = bounds(clear);
