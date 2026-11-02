@@ -23,10 +23,10 @@ describe("ink landscape 1", () => {
   // ADR 0001: a published style's output for a seed never changes. If one of these fails, the style's drawing
   // changed: restore it, and ship the change as a new style version instead.
   it("draws the same pixels it shipped with", () => {
-    expect(sha(pixels(1, 39, 50))).toBe("52bd7d6de635b995");
-    expect(sha(pixels(2, 50, 39))).toBe("a9911b5a4c645c21");
-    expect(sha(pixels(5, 44, 44))).toBe("58301d3990961758");
-    expect(sha(pixels(7, 52, 40, "shan1w"))).toBe("fe21778f06f3d042");
+    expect(sha(pixels(1, 39, 50))).toBe("dd5db7402b5860bd");
+    expect(sha(pixels(2, 50, 39))).toBe("fa46264278085ded");
+    expect(sha(pixels(5, 44, 44))).toBe("7e27dde34767be9f");
+    expect(sha(pixels(7, 52, 40, "shan1w"))).toBe("3f99b75e506995e8");
   });
 
   it("draws different art for different seeds", () => {

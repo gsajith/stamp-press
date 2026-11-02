@@ -133,13 +133,16 @@ function p5Noise(rand: () => number) {
       let n2 = perlin[(of + YWRAP) & SIZE];
       n2 += rxf * (perlin[(of + YWRAP + 1) & SIZE] - n2);
       n1 += ryf * (n2 - n1);
-      of += ZWRAP;
-      n2 = perlin[of & SIZE];
-      n2 += rxf * (perlin[(of + 1) & SIZE] - n2);
-      let n3 = perlin[(of + YWRAP) & SIZE];
-      n3 += rxf * (perlin[(of + YWRAP + 1) & SIZE] - n3);
-      n2 += ryf * (n3 - n2);
-      if (zf !== 0) n1 += ease(zf) * (n2 - n1);
+      // The next z layer, which only counts off whole z.
+      if (zf !== 0) {
+        of += ZWRAP;
+        n2 = perlin[of & SIZE];
+        n2 += rxf * (perlin[(of + 1) & SIZE] - n2);
+        let n3 = perlin[(of + YWRAP) & SIZE];
+        n3 += rxf * (perlin[(of + YWRAP + 1) & SIZE] - n3);
+        n2 += ryf * (n3 - n2);
+        n1 += ease(zf) * (n2 - n1);
+      }
       r += n1 * ampl;
       ampl *= 0.5;
       xi <<= 1;
@@ -282,6 +285,9 @@ function shanShui(R: () => number, noiseRand: () => number) {
       fun?: (x: number) => number;
     } = {},
   ) {
+    // Two points have no body to widen, so only the original's outline shows: a short dash.
+    if (ptlist.length === 2 && out > 0)
+      shapes.push({ pts: ptlist, col, line: out });
     if (ptlist.length < 3) return;
     const v0: Pt[] = [];
     const v1: Pt[] = [];
@@ -2173,6 +2179,10 @@ function rasterizer(
   }
   const stride = width + 2;
   const acc = new Float64Array(stride * height);
+  // The first and last cell each row's edges touched, so a fill sweeps only those: past them the running sum
+  // is 0, or a rounding residue too small to paint.
+  const lo = new Int32Array(height).fill(stride);
+  const hi = new Int32Array(height).fill(-1);
 
   // One straight edge from (x0, y0) to (x1, y1), in pixels.
   function edge(x0: number, y0: number, x1: number, y1: number) {
@@ -2212,6 +2222,8 @@ function rasterizer(
       const xaFloor = Math.floor(xa);
       const xai = xaFloor;
       const xbi = Math.ceil(xb);
+      if (xai < lo[y]) lo[y] = xai;
+      if (xbi + 1 > hi[y]) hi[y] = xbi + 1;
       if (xbi <= xai + 1) {
         const xmf = 0.5 * (x + xnext) - xaFloor;
         acc[row + xai] += d - d * xmf;
@@ -2264,10 +2276,12 @@ function rasterizer(
         );
       }
     }
-    const c0 = Math.max(0, Math.floor(x0));
-    const c1 = Math.min(width + 1, Math.ceil(x1) + 1);
     const r1 = Math.min(height, Math.ceil(y1));
     for (let y = Math.max(0, Math.floor(y0)); y < r1; y++) {
+      const c0 = lo[y];
+      const c1 = hi[y] < width + 1 ? hi[y] : width + 1;
+      lo[y] = stride;
+      hi[y] = -1;
       let sum = 0;
       for (let x = c0; x <= c1; x++) {
         const i = y * stride + x;
