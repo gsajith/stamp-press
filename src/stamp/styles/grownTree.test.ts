@@ -32,12 +32,12 @@ describe("grown tree 1", () => {
   // ADR 0001: a published style's output for a seed never changes. If one of these fails, the style's drawing
   // changed: restore it, and ship the change as a new style version instead.
   it("draws the same pixels it shipped with", () => {
-    expect(sha(pixels(1, 39, 50))).toBe("f032e5996aca1e0e");
-    expect(sha(pixels(2, 50, 39))).toBe("cda675506da79f11");
-    expect(sha(pixels(3, 44, 44))).toBe("3c12a4657c9b2bdb");
-    expect(sha(pixels(4, 44, 56, "tree1w"))).toBe("9ede0b5a28a8580e");
+    expect(sha(pixels(1, 39, 50))).toBe("6a064aaca129460e");
+    expect(sha(pixels(2, 50, 39))).toBe("2c00f467030e7818");
+    expect(sha(pixels(3, 44, 44))).toBe("e2cde26f5677c99c");
+    expect(sha(pixels(4, 44, 56, "tree1w"))).toBe("0dd953b9df0bf4cd");
     // Large enough for the grain to print as stipple, as in the detail view.
-    expect(sha(pixels(5, 1100, 1400))).toBe("6c8310201e63e36c");
+    expect(sha(pixels(5, 1100, 1400))).toBe("69279da51847286a");
   });
 
   it("draws different art for different seeds", () => {

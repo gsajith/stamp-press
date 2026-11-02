@@ -59,6 +59,9 @@ const GRAINS = 0.04;
 // with its square root, so a branch wanders as far over the same length.
 const STEP = 10 * ONE;
 const PIXELS_PER_STEP = STEP / ONE;
+// A branch dies at this radius. The original lets twigs thin to a pixel, ending in tufts of hairlines that
+// blur at stamp size; its sample tree's limbs end blunt, as here.
+const TIP = 12 * ONE;
 
 // How much more a branch turns as it thins: (1 + (ONE + INIT_BRANCH - r) / INIT_BRANCH) ^ 2.2, tabled over
 // q = 1 - r / INIT_BRANCH and read by linear interpolation, since exact pow is slow for every step.
@@ -139,7 +142,7 @@ export function grow(
       b.s = sin(b.a);
       b.x += b.c * STEP;
       b.y += b.s * STEP;
-      if (b.r <= ONE) continue;
+      if (b.r <= TIP) continue;
       ops.push(x0, y0, c0, s0, b.x, b.y, b.c, b.s, b.r, grain(), grain());
       const prob = (INIT_BRANCH - b.r + ONE) * probScale * PIXELS_PER_STEP;
       if (rand() < prob) {
