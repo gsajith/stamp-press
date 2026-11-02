@@ -29,7 +29,9 @@ import { pixelPlanet1 } from "./styles/pixelPlanet";
 import { pixelSprite1 } from "./styles/pixelSprite";
 import { plotterHomage1 } from "./styles/plotterHomage";
 import { quiltBlocks1 } from "./styles/quiltBlocks";
+import { reactionDiffusion1 } from "./styles/reactionDiffusion";
 import { risoOverprint1 } from "./styles/risoOverprint";
+import { sandLines1 } from "./styles/sandLines";
 import { seashell1 } from "./styles/seashell";
 import { skyChart1 } from "./styles/skyChart";
 import { spirograph1 } from "./styles/spirograph";
@@ -119,6 +121,8 @@ export const NEW_STYLES: readonly Style[] = [
   nonflowers1,
   isohedralTiling1,
   fantasyMap1,
+  sandLines1,
+  reactionDiffusion1,
   spirograph1,
 ];
 
