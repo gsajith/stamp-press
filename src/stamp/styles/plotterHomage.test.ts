@@ -19,7 +19,10 @@ describe("plotter homage 1", () => {
   it("is pressed in the new style set only", () => {
     expect(NEW_STYLES.map((s) => s.id)).toContain("homage1");
     expect(STYLES.map((s) => s.id)).not.toContain("homage1");
-    const refs = [0, 0.5, 0.99].map((r) => pressStampRef(NEW_STYLES, () => r));
+    // A press draws one random number to pick a style: try one that lands in every slot.
+    const refs = NEW_STYLES.map((_, i) =>
+      pressStampRef(NEW_STYLES, () => (i + 0.5) / NEW_STYLES.length),
+    );
     expect(refs.map((ref) => ref.source)).toContain("homage1");
   });
 
