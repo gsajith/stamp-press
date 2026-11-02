@@ -18,4 +18,5 @@ and license notice in its header. One line per style: id, project, author, licen
 - `map1`: terrain and naming-language, Martin O'Leary, MIT, https://github.com/mewo2/terrain and
   https://github.com/mewo2/naming-language. Its labels use the Hershey fonts (A. V. Hershey) as packaged by
   hersheytextjs, James T, MIT, https://github.com/techninja/hersheytextjs
-- `knit1`: wavefunctioncollapse (overlapping model), Kevin Chapelier, MIT, https://github.com/kchapelier/wavefunctioncollapse
+- `knit1`: wavefunctioncollapse (overlapping model), Kevin Chapelier, porting WaveFunctionCollapse by Maxim Gumin, MIT,
+  https://github.com/kchapelier/wavefunctioncollapse, https://github.com/mxgmn/WaveFunctionCollapse

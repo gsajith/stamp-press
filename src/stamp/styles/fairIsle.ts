@@ -20,6 +20,7 @@
 // random-indice.js) under the MIT License:
 //
 //   Copyright (c) 2014 Kevin Chapelier
+//   Copyright (c) 2016 Maxim Gumin (WaveFunctionCollapse, which kchapelier's code translates; same license)
 //
 //   Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
 //   associated documentation files (the "Software"), to deal in the Software without restriction, including
@@ -662,7 +663,7 @@ function draw(
     }
   }
 
-  // The tile, at two texels or more per pixel up to 2048 px.
+  // The tile, at about two texels per pixel or more up to 2048 px: 1.87 at the least, for a full-bleed square.
   const cellPx = width / aw;
   const res = cellPx <= 12 ? 32 : cellPx <= 32 ? 64 : 128;
   const tile = table(res, C, stitch);
