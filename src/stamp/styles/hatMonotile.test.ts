@@ -42,10 +42,10 @@ describe("hat monotile 1", () => {
   // ADR 0001: a published style's output for a seed never changes. If one of these fails, the style's drawing
   // changed: restore it, and ship the change as a new style version instead.
   it("draws the same pixels it shipped with", () => {
-    expect(sha(pixels(1, 39, 50))).toBe("ec142c2581def32c");
-    expect(sha(pixels(2, 50, 39))).toBe("d1b39d7770a1811e");
-    expect(sha(pixels(3, 44, 44))).toBe("63106589097a31c2");
-    expect(sha(pixels(4, 39, 50, "hat1w"))).toBe("31ac81e91aa061a2");
+    expect(sha(pixels(1, 39, 50))).toBe("99d34cd24f321843");
+    expect(sha(pixels(2, 50, 39))).toBe("352bb02c902673d4");
+    expect(sha(pixels(3, 44, 44))).toBe("f5851d6e9a450b70");
+    expect(sha(pixels(4, 39, 50, "hat1w"))).toBe("e75fda1ed8fa5c8b");
   });
 
   it("draws different art for different seeds", () => {

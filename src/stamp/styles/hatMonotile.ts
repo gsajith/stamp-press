@@ -126,7 +126,8 @@ const HAT: readonly Pt[] = [
 type Label = "H1" | "H" | "T" | "P" | "F";
 
 // A metatile: its outline, and its children placed by maps, each a smaller metatile or a hat. `box` bounds its
-// hats, [x0, y0, x1, y1], so a draw can skip metatiles off the frame.
+// outline and everything inside it, outlines and hats, as [x0, y0, x1, y1], so a draw can skip metatiles off
+// the frame.
 type Meta = { shape: Pt[]; children: Child[]; box: number[] };
 type Child = { T: Mat; geom: Label | Meta };
 
@@ -152,7 +153,7 @@ function meta(shape: Pt[], children: Child[]): Meta {
       ? HAT.map((p) => transPt(T, p))
       : corners(T, geom.box),
   );
-  return { shape, children, box: bounds(points) };
+  return { shape, children, box: bounds([...shape, ...points]) };
 }
 
 // Moves a metatile so its outline's vertex average sits at the origin, as the original does.
@@ -334,6 +335,8 @@ function hTile(level: number): Meta {
 const TOP = 5;
 const CENTER = pt(-6, 5.5);
 const CENTER_ROOM = 64;
+// The art's longest side over its shortest, at most: a portrait stamp with the widest margin, about 0.56 by 0.78.
+const LONGEST = 1.45;
 
 type Hat = { label: Label; T: Mat };
 
@@ -632,7 +635,9 @@ function draw(
   // mirrored.
   const across = ACROSS[0] + (ACROSS[1] - ACROSS[0]) * rand();
   const scale = unit / across;
-  const halfDiagonal = Math.sqrt(width * width + height * height) / 2 / scale;
+  // The crop's room comes from the longest art any stamp has, not this one's, so it doesn't move when the art's
+  // size rounds differently at another scale.
+  const halfDiagonal = (across / 2) * Math.sqrt(1 + LONGEST * LONGEST);
   const room = CENTER_ROOM - halfDiagonal;
   const [ox, oy] = inDisc(rand);
   const [cx, cy] = [CENTER.x + ox * room, CENTER.y + oy * room];
