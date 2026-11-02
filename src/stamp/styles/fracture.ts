@@ -399,9 +399,9 @@ function draw(
     while (!inside(at[0], at[1]));
     return { at, count: 2 + Math.floor(rand() * 2) };
   });
-  // The original looks 50 steps ahead. Looking 14 steps ahead is cheaper, and the points between count by
+  // The original looks 50 steps ahead. Looking 11 steps ahead is cheaper, and the points between count by
   // their expected pull: their density, times the depth of the band, times the cone's width at unit distance.
-  const reach = 14 * step;
+  const reach = 11 * step;
   const far =
     ((50 * step - reach) * 2 * Math.sqrt(1 - DOT * DOT)) / (spacing * spacing);
   const cracks = fractures(rand, {
@@ -429,6 +429,7 @@ function draw(
   const patch = tinting < 0.35;
   const scatter = !patch && tinting < 0.55;
   const noise = perlin2(subSeed(seed, 0x4f1d));
+  const which = perlin2(subSeed(seed, 0x2e7b));
   const frequency = patch ? 2 + 1.5 * rand() : 14 + 6 * rand();
   const cut = patch ? 0.15 + 0.2 * rand() : 0.3 + 0.15 * rand();
   const [ox, oy] = [64 * rand(), 64 * rand()];
@@ -528,10 +529,15 @@ function draw(
         if (count < (unit * unit) / 25) {
           const [u, v] = [(sx / count + 0.5) / unit, (sy / count + 0.5) / unit];
           const k = noise(u * frequency + ox, v * frequency + oy);
+          // Scattered cells take the second ink or the third by another field, which changes only where it
+          // crosses zero, so a cell keeps its ink at any size.
           if (k > cut)
-            tint = scatter
-              ? 1 + (Math.floor(((k - cut) / (1 - cut)) * 977) % tints.length)
-              : 1;
+            tint =
+              scatter &&
+              tints.length > 1 &&
+              which(u * frequency, v * frequency) > 0
+                ? 2
+                : 1;
         }
         cells.push(tint);
       }

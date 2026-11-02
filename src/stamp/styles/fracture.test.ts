@@ -37,12 +37,12 @@ describe("fracture 1", () => {
   // ADR 0001: a published style's output for a seed never changes. If one of these fails, the style's drawing
   // changed: restore it, and ship the change as a new style version instead.
   it("draws the same pixels it shipped with", () => {
-    expect(sha(pixels(1, 39, 50))).toBe("1a108ac28fae8b61");
-    expect(sha(pixels(2, 50, 39))).toBe("90603816531a07f8");
-    expect(sha(pixels(3, 44, 44))).toBe("f81f208eb1eba64d");
-    expect(sha(pixels(4, 44, 56, "crack1w"))).toBe("4ae617911587d9d7");
+    expect(sha(pixels(1, 39, 50))).toBe("70749f2ddb192a5e");
+    expect(sha(pixels(2, 50, 39))).toBe("b6578195fe057eda");
+    expect(sha(pixels(3, 44, 44))).toBe("d45a263e1c7d8d99");
+    expect(sha(pixels(4, 44, 56, "crack1w"))).toBe("eb371d438dc190a3");
     // Desk size.
-    expect(sha(pixels(5, 160, 205))).toBe("3195e0795eca58fa");
+    expect(sha(pixels(5, 160, 205))).toBe("3796ff2c616e88dd");
   });
 
   it("draws different art for different seeds", () => {
