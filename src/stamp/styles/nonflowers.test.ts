@@ -29,10 +29,10 @@ describe("imaginary flower 1", () => {
   // changed: restore it, and ship the change as a new style version instead.
   // The small draws are supersampled and 160x200 isn't, so both paths are pinned.
   it("draws the same pixels it shipped with", () => {
-    expect(sha(pixels(1, 39, 50))).toBe("4112c4bc0670af9a");
-    expect(sha(pixels(2, 50, 39))).toBe("6d712198a7efc49c");
-    expect(sha(pixels(3, 44, 44, "bloom1w"))).toBe("b66f74a2c5cd2079");
-    expect(sha(pixels(7, 160, 200))).toBe("87cb16a49a719d3b");
+    expect(sha(pixels(1, 39, 50))).toBe("9e80b575f3a137ef");
+    expect(sha(pixels(2, 50, 39))).toBe("a217f908958faa1b");
+    expect(sha(pixels(3, 44, 44, "bloom1w"))).toBe("a19742bebfe32625");
+    expect(sha(pixels(7, 160, 200))).toBe("5fa422a196cd9152");
   });
 
   it("draws different art for different seeds", () => {

@@ -76,7 +76,8 @@ function p5Noise(rand: () => number): Noise {
   const table = new Float64Array(4096);
   for (let i = 0; i < 4096; i++) table[i] = rand();
   return (x, y = 0, z = 0, octaves = 4) => {
-    if (octaves === 0) return 0.5;
+    // With every octave dropped, the sum of their averages.
+    if (octaves === 0) return 0.46875;
     x = Math.abs(x);
     y = Math.abs(y);
     z = Math.abs(z);
@@ -230,15 +231,17 @@ type Plant = { foliage: Shape[]; flowers: Shape[] };
 // the flowers' hearts', and the dark ink the brush lines are drawn in.
 type Inks = { flower: [Rgb, Rgb]; leaf: Rgb; wood: Rgb; heart: Rgb; line: Rgb };
 
-// A stamp shows one clear plant, so a plant stops adding flowers past this many, though each herb's stem
-// still ends in one.
-const MAX_FLOWERS = 14;
+// A stamp shows one clear plant, and the draw has a budget, so a plant stops adding leaves and flowers past
+// these many, though each herb's stem still ends in a flower.
+const MAX_LEAVES = 40;
+const MAX_FLOWERS = 12;
 const BLOOM = 1.3;
 
 function grow(rand: () => number, noise: Noise, inks: Inks): Plant {
   const normRand = (m: number, M: number) => m + (M - m) * rand();
   const choice = <T>(xs: T[]) => xs[Math.floor(xs.length * rand())];
   const plant: Plant = { foliage: [], flowers: [] };
+  let leaves = 0;
 
   const quad = (s: Shape, pts: number[][], c: number[]) => {
     const flatPts: number[] = [];
@@ -315,7 +318,8 @@ function grow(rand: () => number, noise: Noise, inks: Inks): Plant {
     col: Tones;
     cof?: (x: number) => number;
     ben: (x: number) => V3;
-    rim?: number[];
+    // The outline's color, or none.
+    rim?: number[] | null;
   };
   function leaf({
     layer,
@@ -332,6 +336,7 @@ function grow(rand: () => number, noise: Noise, inks: Inks): Plant {
     ben,
     rim = lineColor(0.3),
   }: LeafArgs): V3[] {
+    if (!flo) leaves++;
     const orient = euler(rot);
     let disp: V3 = [0, 0, 0];
     let crot: V3 = [0, 0, 0];
@@ -379,13 +384,14 @@ function grow(rand: () => number, noise: Noise, inks: Inks): Plant {
             v0[0] * v1[1] - v0[1] * v1[0],
           ];
           const nl = Math.sqrt(n[0] * n[0] + n[1] * n[1] + n[2] * n[2]);
-          const c = nl > 0 ? -n[1] / nl : NaN;
-          // acos(c), from atan2.
-          lt = 1 - atan2(Math.sqrt(Math.max(0, 1 - c * c)), c) / PI;
+          const c = -n[1] / nl;
+          // acos(c), from atan2. A segment folded flat has no face, and the original shades it dark.
+          lt =
+            nl > 0 ? 1 - atan2(Math.sqrt(Math.max(0, 1 - c * c)), c) / PI : 0;
         } else {
           lt = p * normRand(0.95, 1);
         }
-        lt = clamp01(cof(lt) || 0);
+        lt = clamp01(cof(lt));
         const c = colorOf(col, lt);
         const prevP = at(P[P.length - 1]);
         quad(fill, [at(l), at(L[L.length - 1]), prevP, at(disp)], c);
@@ -440,8 +446,10 @@ function grow(rand: () => number, noise: Noise, inks: Inks): Plant {
       stroke(layer, P.map(at), lineColor(0.3));
     }
     // The outline, in a lighter line.
-    stroke(layer, L.map(at), rim);
-    stroke(layer, R.map(at), rim);
+    if (rim) {
+      stroke(layer, L.map(at), rim);
+      stroke(layer, R.map(at), rim);
+    }
     return P;
   }
 
@@ -715,6 +723,8 @@ function grow(rand: () => number, noise: Noise, inks: Inks): Plant {
         rot,
         seg: 8,
         len: innerLength * normRand(0.8, 1.2) * BLOOM,
+        // Too small to need the original's outline.
+        rim: null,
         wid: (t) => sin(t * PI) * 4 * BLOOM,
         vei: [0],
         col: innerColor,
@@ -747,7 +757,7 @@ function grow(rand: () => number, noise: Noise, inks: Inks): Plant {
     for (let i = 0; i < PL.length; i++) {
       if (i / PL.length <= 0.1) continue;
       for (const [px, py] of PL[i][1]) {
-        if (rand() < leafChance)
+        if (leaves < MAX_LEAVES && rand() < leafChance)
           leaf({
             layer: plant.foliage,
             xof: px,
@@ -806,7 +816,7 @@ function grow(rand: () => number, noise: Noise, inks: Inks): Plant {
       });
       if (leafPosition === 2)
         for (const [px, py] of P)
-          if (rand() < leafChance * 2)
+          if (leaves < MAX_LEAVES && rand() < leafChance * 2)
             leaf({
               layer: plant.foliage,
               xof: x0 + px,
@@ -861,7 +871,7 @@ function grow(rand: () => number, noise: Noise, inks: Inks): Plant {
       }
     }
     if (leafPosition === 1)
-      for (let i = 0; i < leafChance * 100; i++)
+      for (let i = 0; i < leafChance * 100 && leaves < MAX_LEAVES; i++)
         leaf({
           layer: plant.foliage,
           xof: x0,
@@ -1088,17 +1098,25 @@ const MIN_UNIT = 128;
 // A box [left, top, right, bottom] in plant units.
 type Box = [number, number, number, number];
 function bounds(shapes: Shape[]): Box {
-  const box: Box = [Infinity, Infinity, -Infinity, -Infinity];
+  let [x0, y0, x1, y1] = [Infinity, Infinity, -Infinity, -Infinity];
   for (const { polys } of shapes)
     for (const poly of polys)
       for (let i = 0; i < poly.length; i += 2) {
-        box[0] = Math.min(box[0], poly[i]);
-        box[1] = Math.min(box[1], poly[i + 1]);
-        box[2] = Math.max(box[2], poly[i]);
-        box[3] = Math.max(box[3], poly[i + 1]);
+        const x = poly[i];
+        const y = poly[i + 1];
+        if (x < x0) x0 = x;
+        if (x > x1) x1 = x;
+        if (y < y0) y0 = y;
+        if (y > y1) y1 = y;
       }
-  return box;
+  return [x0, y0, x1, y1];
 }
+const union = (a: Box, b: Box): Box => [
+  Math.min(a[0], b[0]),
+  Math.min(a[1], b[1]),
+  Math.max(a[2], b[2]),
+  Math.max(a[3], b[3]),
+];
 
 function draw(
   ctx: CanvasRenderingContext2D,
@@ -1124,8 +1142,9 @@ function draw(
   });
 
   // Fit the plant to the frame. Like the original, it may run off the edges, but its flowers stay in.
-  const all = bounds([...plant.foliage, ...plant.flowers]);
-  const bloom = plant.flowers.length ? bounds(plant.flowers) : all;
+  const leafy = bounds(plant.foliage);
+  const bloom = plant.flowers.length ? bounds(plant.flowers) : leafy;
+  const all = union(leafy, bloom);
   const unit = Math.min(width, height);
   const [W, H] = [width / unit, height / unit];
   const fit = ([x0, y0, x1, y1]: Box) =>
@@ -1162,15 +1181,19 @@ function draw(
     while (o < 4 && freq * foot * 2 ** o < 0.5) o++;
     return o;
   };
-  const fadeOct = octaves(0.01);
-  const [wispN, wispM] = [octaves(0.2), octaves(0.5)];
+  // The fade's finest octave and the tint's two finest are too faint to see, so they're dropped at any size.
+  const fadeOct = Math.min(3, octaves(0.01));
+  const [wispN, wispM] = [octaves(0.2), Math.min(2, octaves(0.5))];
 
   const paperRgb = rgb(paper);
   const n = w * h;
   const img = new Float32Array(n * 3);
   const layer = new Float32Array(n * 4);
-  for (let i = 0; i < n; i++)
-    for (let c = 0; c < 3; c++) img[i * 3 + c] = paperRgb[c];
+  for (let i = 0; i < n; i++) {
+    img[i * 3] = paperRgb[0];
+    img[i * 3 + 1] = paperRgb[1];
+    img[i * 3 + 2] = paperRgb[2];
+  }
 
   // Each layer, then its wispy texture, as the original filters them: the foliage also fades in and out.
   for (const [shapes, multiply] of [
@@ -1212,18 +1235,26 @@ function draw(
 
   const image = ctx.createImageData(width, height);
   const out = image.data;
-  for (let y = 0; y < height; y++)
-    for (let x = 0; x < width; x++) {
-      const o = (y * width + x) * 4;
-      for (let c = 0; c < 3; c++) {
-        let sum = 0;
-        for (let j = 0; j < ss; j++)
-          for (let i = 0; i < ss; i++)
-            sum += img[((y * ss + j) * w + x * ss + i) * 3 + c];
-        out[o + c] = Math.round(sum / (ss * ss));
-      }
-      out[o + 3] = 255;
+  if (ss === 1)
+    for (let i = 0; i < n; i++) {
+      out[i * 4] = Math.round(img[i * 3]);
+      out[i * 4 + 1] = Math.round(img[i * 3 + 1]);
+      out[i * 4 + 2] = Math.round(img[i * 3 + 2]);
+      out[i * 4 + 3] = 255;
     }
+  else
+    for (let y = 0; y < height; y++)
+      for (let x = 0; x < width; x++) {
+        const o = (y * width + x) * 4;
+        for (let c = 0; c < 3; c++) {
+          let sum = 0;
+          for (let j = 0; j < ss; j++)
+            for (let i = 0; i < ss; i++)
+              sum += img[((y * ss + j) * w + x * ss + i) * 3 + c];
+          out[o + c] = Math.round(sum / (ss * ss));
+        }
+        out[o + 3] = 255;
+      }
   ctx.putImageData(image, 0, 0);
 }
 
