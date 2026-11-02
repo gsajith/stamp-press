@@ -85,7 +85,7 @@ type Curtain = {
 type Mark = (Line | Fill | Curtain) & {
   group: number;
   color: Rgb;
-  // Bounds, including the line's width.
+  // Bounds, including the line's width and, for a square end, the corners of its cap.
   x0: number;
   y0: number;
   x1: number;
@@ -114,6 +114,8 @@ class Plot {
     const [dx, dy] = [bx - ax, by - ay];
     const length = Math.sqrt(dx * dx + dy * dy);
     if (length === 0) return;
+    // A square cap's corners reach half * sqrt(2) past the endpoint.
+    const reach = round ? half : half * Math.SQRT2;
     this.marks.push({
       kind: "line",
       ax,
@@ -125,10 +127,10 @@ class Plot {
       round,
       group: this.group,
       color: this.color,
-      x0: Math.min(ax, bx) - half,
-      y0: Math.min(ay, by) - half,
-      x1: Math.max(ax, bx) + half,
-      y1: Math.max(ay, by) + half,
+      x0: Math.min(ax, bx) - reach,
+      y0: Math.min(ay, by) - reach,
+      x1: Math.max(ax, bx) + reach,
+      y1: Math.max(ay, by) + reach,
     });
   }
 
@@ -194,7 +196,8 @@ class Plot {
 }
 
 // The share of a pixel-wide cell that a band `half` wide covers when the cell's center sits `d` from the band's
-// middle, both in pixels. Exact for straight lines, so a line keeps its weight at any size, even under a pixel.
+// middle, both in pixels. Exact for lines along the pixel grid, and it keeps any line's total ink, so a line
+// keeps its weight at any size, even under a pixel.
 const cover = (d: number, half: number) =>
   clamp01(Math.min(d + 0.5, half) - Math.max(d - 0.5, -half));
 
@@ -359,10 +362,7 @@ const joyDivision: Piece = (rand, plot, { W, H, px, paper, ink }) => {
       // at most |s - 2c + e| / (4 n^2). Flat stretches take one.
       const [bx, by] = [s0 - 2 * c[0] + e[0], s1 - 2 * c[1] + e[1]];
       const bend = Math.sqrt(bx * bx + by * by);
-      const n = Math.min(
-        8,
-        Math.max(1, Math.ceil(Math.sqrt((3 * bend) / (4 * px)))),
-      );
+      const n = Math.max(1, Math.ceil(Math.sqrt((3 * bend) / (4 * px))));
       for (let t = 1; t <= n; t++) {
         const [a, b] = [(n - t) / n, t / n];
         curve.push([
