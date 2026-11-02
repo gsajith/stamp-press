@@ -19,6 +19,7 @@ import { hatMonotile1 } from "./styles/hatMonotile";
 import { inkLandscape1 } from "./styles/inkLandscape";
 import { islandSurvey1 } from "./styles/islandSurvey";
 import { isohedralTiling1 } from "./styles/isohedralTiling";
+import { isometricBlocks1 } from "./styles/isometricBlocks";
 import { landscapeSilhouette1 } from "./styles/landscapeSilhouette";
 import { linocut1 } from "./styles/linocut";
 import { mathMarbling2 } from "./styles/mathMarbling";
@@ -130,6 +131,7 @@ export const NEW_STYLES: readonly Style[] = [
   grownTree1,
   spirograph1,
   fairIsle1,
+  isometricBlocks1,
 ];
 
 // Style versions no longer pressed. They stay registered so their share links keep working: when a new
