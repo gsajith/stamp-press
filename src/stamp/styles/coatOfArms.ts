@@ -39,7 +39,7 @@ import { CHARGES, type ChargePart } from "./coatOfArmsCharges";
 // - Tinctures come from the palette. The paper and any light ink are the metals, the other inks the colours,
 //   with the darkest ink as sable. Armoria's stains have no palette color and are left out.
 // - Charge categories hold only the CC0 charges: conventional ones and crosses, as in Armoria, and the
-//   figurative CC0 charges pooled into one category (FIGURES), since most of Armoria's categories keep one or
+//   figurative CC0 charges pooled into one category (`figures`), since most of Armoria's categories keep one or
 //   two charges at most.
 // - Two of Armoria's branches can't run, since they test values the generator never sets (a coat-wide `line`,
 //   and a bordure position spelled without its J). They're left out.
@@ -67,6 +67,8 @@ type Template = {
   positionsOff?: Weights;
 };
 
+// The data below is Armoria's dataModel.js and ordinaries.js as it stands. Charge positions by kind of charge,
+// as strings of position letters with their odds.
 const POSITIONS: Record<string, Weights> = {
   conventional: {
     e: 20,
@@ -100,6 +102,7 @@ const POSITIONS: Record<string, Weights> = {
   inescutcheon: { e: 4, jln: 1 },
 };
 
+// Partition lines, as a strip across the 200-unit space that templates turn and place.
 const LINES: { variants: Weights; data: Record<string, string> } = {
   variants: {
     straight: 50,
@@ -175,6 +178,7 @@ const LINES: { variants: Weights; data: Record<string, string> } = {
   },
 };
 
+// Patterns as SVG pattern tiles in two tinctures, c1 and c2, scaled by size.
 const PATTERNS: Record<
   string,
   (p: string, c1: string, c2: string, size: number, chargeId?: string) => string
@@ -243,6 +247,7 @@ const PATTERNS: Record<
     `<pattern id="${p}" width="${size * 28.6}" height="${size * 49.028}" viewBox="0 0 70 120" patternUnits="userSpaceOnUse"><rect width="70" height="120" fill="${c1}"/><path d="M 70,0 V 20 L 35,40 m 35,80 V 100 L 35,80 M 0,120 V 100 L 35,80 V 40 L 0,20 V 0" stroke="${c2}" fill="none" stroke-width="3"/></pattern>`,
 };
 
+// Divisions of the field: the division part's clip path, plain or along a line.
 const DIVISIONS: { variants: Weights; data: Record<string, Template> } = {
   variants: {
     perPale: 25,
@@ -368,6 +373,7 @@ const DIVISIONS: { variants: Weights; data: Record<string, Template> } = {
   },
 };
 
+// Ordinaries, plain or lined, as SVG snippets. The bordure and orle are strokes of the shield, drawn apart.
 const ORDINARIES: {
   lined: Weights;
   straight: Weights;
@@ -600,9 +606,7 @@ const ORDINARIES: {
   },
 };
 
-// Armoria's shields, from its basic, regional, historical and specific types, with their odds. Each has its
-// path in the 200-unit space, a charge size factor when not 1, and its charge positions relative to the
-// middle. A shield without positions uses the Spanish shield's.
+// Armoria's heraldic shield types and the shields in each, with their odds.
 const SHIELD_TYPES = { basic: 10, regional: 2, historical: 1, specific: 1 };
 const SHIELD_GROUPS: Record<string, Weights> = {
   basic: { heater: 12, spanish: 6, french: 1 },
@@ -624,6 +628,8 @@ type Shield = {
   positions?: Record<string, readonly [number, number]>;
 };
 
+// Each shield's path in the 200-unit space, its charge size factor when not 1, and its charge positions
+// relative to the middle. A shield without positions uses the Spanish shield's.
 const SHIELDS: Record<string, Shield> = {
   heater: {
     path: "m25,25 h150 v50 a150,150,0,0,1,-75,125 a150,150,0,0,1,-75,-125 v-50 z",
@@ -1223,8 +1229,8 @@ const SHIELDS: Record<string, Shield> = {
 };
 
 // Charge categories, restricted to Armoria's CC0 charges. `conventional` and `crosses` keep Armoria's lists and
-// odds; the figurative CC0 charges, spread over many of Armoria's categories, share FIGURES.
-const CHARGE_SETS: Record<string, Record<string, number>> = {
+// odds; the figurative CC0 charges, spread over many of Armoria's categories, share `figures`.
+const CHARGE_SETS: Record<string, Weights> = {
   conventional: {
     annulet: 4,
     billet: 5,
@@ -1334,7 +1340,7 @@ const CHARGE_SETS: Record<string, Record<string, number>> = {
 };
 
 // Category odds for a charge alongside an ordinary or division (`types`) and for a lone charge (`single`):
-// Armoria's for conventional charges, crosses and inescutcheons. FIGURES takes 12, between them, where
+// Armoria's for conventional charges, crosses and inescutcheons. `figures` takes 12, between them, where
 // Armoria's figurative categories add up to about 50 over hundreds of charges.
 const CHARGE_TYPES = {
   conventional: 33,
@@ -1532,7 +1538,7 @@ type ChargeItem = {
   divided?: Divided;
 };
 
-export type Coa = {
+type Coa = {
   shield: string;
   t1: Tincture;
   division?: { division: string; t: Tincture; line?: string };
@@ -2521,8 +2527,8 @@ function draw(
       data[p + 1] += (color[1] - data[p + 1]) * a;
       data[p + 2] += (color[2] - data[p + 2]) * a;
     });
-  // A mask covering `polys`, or adding them to `into`, and cut to `clip`.
-  const cover = (polys: readonly number[][], into?: Float32Array) => {
+  // A coverage mask of `polys`, or `polys` added to the mask `into`.
+  const maskOf = (polys: readonly number[][], into?: Float32Array) => {
     const mask = into ?? new Float32Array(width * height);
     scan(shapeOf(polys), width, height, rows, (i, t) => {
       if (t > mask[i]) mask[i] = t;
@@ -2563,7 +2569,7 @@ function draw(
       }
       return;
     }
-    const pattern = PATTERNS[t.name as keyof typeof PATTERNS];
+    const pattern = PATTERNS[t.name];
     const { elements, root } = parseSnippet(
       pattern("p", "T1", "T2", t.size, t.charge),
     );
@@ -2677,7 +2683,7 @@ function draw(
   };
 
   // Armoria's Shield.svelte, in its order, with clip paths as masks.
-  const shieldMask = cover(pts(polysOf(shield.path, IDENTITY)));
+  const shieldMask = maskOf(pts(polysOf(shield.path, IDENTITY)));
   paintTincture(coa.t1, shieldMask);
   const { division, ordinary, charges } = coa;
   if (division) {
@@ -2694,7 +2700,7 @@ function draw(
     for (const e of parseSnippet(
       getTemplate(DIVISIONS.data[division.division], division.line),
     ).elements)
-      cover(pts(polysOf(e.d, e.m)), divisionMask);
+      maskOf(pts(polysOf(e.d, e.m)), divisionMask);
     clip(divisionMask, shieldMask);
     paintTincture(division.t, divisionMask);
     if (ordinary?.divided === "division")
