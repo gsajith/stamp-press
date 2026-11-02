@@ -12,6 +12,7 @@ import { fantasyMap1 } from "./styles/fantasyMap";
 import { fairIsle1 } from "./styles/fairIsle";
 import { flowLines1 } from "./styles/flowLines";
 import { girih1 } from "./styles/girih";
+import { grownTree1 } from "./styles/grownTree";
 import { guillocheRosette1 } from "./styles/guillocheRosette";
 import { halftoneObject1 } from "./styles/halftoneObject";
 import { hatMonotile1 } from "./styles/hatMonotile";
@@ -125,6 +126,7 @@ export const NEW_STYLES: readonly Style[] = [
   sandLines1,
   reactionDiffusion1,
   hatMonotile1,
+  grownTree1,
   fairIsle1,
 ];
 

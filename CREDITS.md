@@ -21,5 +21,6 @@ and license notice in its header. One line per style: id, project, author, licen
   hersheytextjs, James T, MIT, https://github.com/techninja/hersheytextjs
 - `sand1`: sand-spline and sand-glyphs, Anders Hoff (inconvergent), MIT, https://github.com/inconvergent/sand-spline, https://github.com/inconvergent/sand-glyphs
 - `rd1`: jsexp (`grayscott` experiment), P. M. Neila, BSD-3-Clause, https://github.com/pmneila/jsexp
+- `tree1`: tree, Anders Hoff (inconvergent), MIT, https://github.com/inconvergent/tree
 - `knit1`: wavefunctioncollapse (overlapping model), Kevin Chapelier, porting WaveFunctionCollapse by Maxim Gumin, MIT,
   https://github.com/kchapelier/wavefunctioncollapse, https://github.com/mxgmn/WaveFunctionCollapse
