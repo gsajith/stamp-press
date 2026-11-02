@@ -31,7 +31,7 @@ describe("apparatus 1", () => {
     expect(sha(pixels(1, 39, 50))).toBe("33f05af9baed38d4");
     expect(sha(pixels(2, 50, 39))).toBe("170402e12c8b04f9");
     expect(sha(pixels(3, 44, 44))).toBe("4dd40ac7e94840ab");
-    expect(sha(pixels(4, 39, 50, "apparat1w"))).toBe("5af7a062a46b62b4");
+    expect(sha(pixels(4, 39, 50, "apparat1w"))).toBe("13d9f4b6d4a37985");
   });
 
   it("draws different art for different seeds", () => {

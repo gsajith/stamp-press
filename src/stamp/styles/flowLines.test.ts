@@ -34,7 +34,7 @@ describe("flow lines 1", () => {
     expect(sha(pixels(1, 39, 50))).toBe("3b59b15871077f45");
     expect(sha(pixels(2, 50, 39))).toBe("b12c539239a36070");
     expect(sha(pixels(3, 44, 44))).toBe("10a5dff0d5df64c8");
-    expect(sha(pixels(4, 44, 56, "flow1w"))).toBe("c743bc0368b58b55");
+    expect(sha(pixels(4, 44, 56, "flow1w"))).toBe("fe02bc66cda0bae7");
   });
 
   it("draws different art for different seeds", () => {

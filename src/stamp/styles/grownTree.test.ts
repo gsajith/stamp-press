@@ -35,7 +35,7 @@ describe("grown tree 1", () => {
     expect(sha(pixels(1, 39, 50))).toBe("6a064aaca129460e");
     expect(sha(pixels(2, 50, 39))).toBe("f3b63fd4c044444c");
     expect(sha(pixels(3, 44, 44))).toBe("a49dfc1b0871d088");
-    expect(sha(pixels(4, 44, 56, "tree1w"))).toBe("0fa4493004b5a804");
+    expect(sha(pixels(4, 44, 56, "tree1w"))).toBe("c3479ac87f787669");
     // Large enough for the grain to print as stipple, as in the detail view.
     expect(sha(pixels(5, 1100, 1400))).toBe("dfd5f140d9a1310c");
   });

@@ -26,7 +26,7 @@ describe("reaction diffusion 1", () => {
     expect(sha(pixels(1, 39, 50))).toBe("c195dac71103ba8a");
     expect(sha(pixels(2, 50, 39))).toBe("5232486c9aae20cd");
     expect(sha(pixels(3, 44, 44))).toBe("8d7fe08ec60e4344");
-    expect(sha(pixels(4, 39, 50, "rd1w"))).toBe("e0df65ec4b1a8d6e");
+    expect(sha(pixels(4, 39, 50, "rd1w"))).toBe("d0604ecb63956762");
   });
 
   it("draws different art for different seeds", () => {

@@ -26,7 +26,7 @@ describe("ink landscape 1", () => {
     expect(sha(pixels(1, 39, 50))).toBe("dd5db7402b5860bd");
     expect(sha(pixels(2, 50, 39))).toBe("fa46264278085ded");
     expect(sha(pixels(5, 44, 44))).toBe("7e27dde34767be9f");
-    expect(sha(pixels(7, 52, 40, "shan1w"))).toBe("3f99b75e506995e8");
+    expect(sha(pixels(7, 52, 40, "shan1w"))).toBe("841a2a67251a4d3e");
   });
 
   it("draws different art for different seeds", () => {

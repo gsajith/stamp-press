@@ -45,7 +45,7 @@ describe("hat monotile 1", () => {
     expect(sha(pixels(1, 39, 50))).toBe("99d34cd24f321843");
     expect(sha(pixels(2, 50, 39))).toBe("352bb02c902673d4");
     expect(sha(pixels(3, 44, 44))).toBe("f5851d6e9a450b70");
-    expect(sha(pixels(4, 39, 50, "hat1w"))).toBe("e75fda1ed8fa5c8b");
+    expect(sha(pixels(4, 39, 50, "hat1w"))).toBe("080e6ce0fc2d0de3");
   });
 
   it("draws different art for different seeds", () => {

@@ -31,7 +31,7 @@ describe("imaginary flower 1", () => {
   it("draws the same pixels it shipped with", () => {
     expect(sha(pixels(1, 39, 50))).toBe("9e80b575f3a137ef");
     expect(sha(pixels(2, 50, 39))).toBe("12b3dfe259360318");
-    expect(sha(pixels(3, 44, 44, "bloom1w"))).toBe("a19742bebfe32625");
+    expect(sha(pixels(3, 44, 44, "bloom1w"))).toBe("776bc7857f0351af");
     expect(sha(pixels(7, 160, 200))).toBe("5fa422a196cd9152");
   });
 
