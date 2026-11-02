@@ -5,3 +5,4 @@ and license notice in its header. One line per style: id, project, author, licen
 
 - `apparat1`: p5ycho (`apparat4` sketch), Kjetil Golid, MIT, https://github.com/kgolid/p5ycho
 - `contour1`: topographic (`index-interactive-cols` sketch), Kjetil Golid, MIT, https://github.com/kgolid/topographic
+- `flow1`: streamlines, Andrei Kashcha, MIT, https://github.com/anvaka/streamlines
