@@ -70,7 +70,7 @@ export function sandCanvas(width: number, height: number, inks: number): Sand {
 }
 
 // The density one grain lays on a pixel. Smaller means more, fainter grains: smoother sand, more work.
-const GRAIN = 0.12;
+const GRAIN = 0.08;
 
 // A broad pen for `sprinkle`: each grain lands somewhere on a short stroke across the curve, set by the pen's
 // angle there, rather than on the curve itself. sand-glyphs' nib.
@@ -202,17 +202,19 @@ export function sprinkle(
   const grains = Math.ceil((mass * unit * unit) / GRAIN);
   const each = (mass * unit * unit) / grains;
   const knots = nib ? nib.dirs.length / 2 - 1 : 0;
+  const p0 = from?.path;
+  const m0 = from?.m;
   let seg = 0;
   for (let g = 0; g < grains; g++) {
     const u = ((g + rand()) / grains) * length;
     while (seg < points - 2 && at[seg + 1] <= u) seg++;
     const span = at[seg + 1] - at[seg];
     const t = span > 0 ? (u - at[seg]) / span : 0;
-    const [b, c] = [2 * seg, 2 * seg + 2];
+    const b = 2 * seg;
+    const c = b + 2;
     let x = hermite(path[b], path[c], m[b], m[c], span, t);
     let y = hermite(path[b + 1], path[c + 1], m[b + 1], m[c + 1], span, t);
-    if (from) {
-      const [p0, m0] = [from.path, from.m];
+    if (p0 && m0) {
       const x0 = hermite(p0[b], p0[c], m0[b], m0[c], span, t);
       const y0 = hermite(p0[b + 1], p0[c + 1], m0[b + 1], m0[c + 1], span, t);
       const w = rand();
@@ -306,19 +308,18 @@ function printSand(
 
 // ---- Ribbons: sand-spline ---------------------------------------------------------------------------------
 
-// Directions for the random walk, so a step needs no trig: a random angle out of DIRS.
+// Directions for the random walk, so a step needs no trig: a random angle out of DIRS, as cos, sin pairs.
 const DIRS = 64;
-const DIR = Array.from({ length: DIRS }, (_, i) => {
-  const a = (2 * Math.PI * i) / DIRS;
-  return [cos(a), sin(a)];
+const DIR = Float64Array.from({ length: 2 * DIRS }, (_, i) => {
+  const a = (2 * Math.PI * (i >> 1)) / DIRS;
+  return i & 1 ? sin(a) : cos(a);
 });
 
 // The steps every spline wanders, each laying down its grains: the original's frames.
 const STEPS = 300;
-// The ink every spline lays down over all its steps, per art unit of its starting length.
-const RIBBON_INK = 0.02;
-// The most ink a stamp's ribbons lay down in all, to keep the grains in the draw budget.
-const RIBBON_MAX = 0.24;
+// The ink a stamp's ribbons lay down in all, shared by their starting lengths: a lone ring gets as much as a
+// wreath, so its smoke reads as the original's does. Grains grow with it, so it also sets the draw's cost.
+const RIBBON_INK = 0.24;
 
 // One sand spline: control points that wander a little more each step. Point i's speed itself takes a random
 // walk with steps up to i times `stir`, so the first point never moves and the far end frays most.
@@ -332,7 +333,7 @@ type Spline = {
   mass: number;
 };
 
-// A spline through `path` that lays down RIBBON_INK per art unit of its starting length, over all its steps.
+// A spline through `path`, laying down ink in proportion to its starting length until `ribbons` scales it.
 // Its knots stay those of its starting shape as it wanders, so each step's curve can sweep from the last.
 function spline(path: number[], stir: number, ink: number): Spline {
   const start = curve(path);
@@ -343,7 +344,7 @@ function spline(path: number[], stir: number, ink: number): Spline {
     speed,
     stir,
     ink,
-    mass: (RIBBON_INK * length) / STEPS,
+    mass: length / STEPS,
   };
 }
 
@@ -352,9 +353,9 @@ function wander(s: Spline, rand: () => number) {
   const path = s.curve.path.slice();
   for (let i = 0; i < s.speed.length; i++) {
     s.speed[i] += (1 - 2 * rand()) * i * s.stir;
-    const [dx, dy] = DIR[Math.floor(rand() * DIRS)];
-    path[2 * i] += dx * s.speed[i];
-    path[2 * i + 1] += dy * s.speed[i];
+    const d = 2 * Math.floor(rand() * DIRS);
+    path[2 * i] += DIR[d] * s.speed[i];
+    path[2 * i + 1] += DIR[d + 1] * s.speed[i];
   }
   s.curve = curve(path, s.curve.at);
 }
@@ -476,7 +477,7 @@ const LAYOUTS: ((
     const out: Spline[] = [];
     for (let j = 0; j < rowsN; j++)
       for (let i = 0; i < cols; i++) {
-        const n = 10 + Math.floor(rand() * 20);
+        const n = 8 + Math.floor(rand() * 14);
         const r = size * (0.26 + 0.08 * rand());
         const pts = circle(
           ox + (i + 0.5) * size,
@@ -503,9 +504,8 @@ function ribbons(
 ) {
   const layout = LAYOUTS[Math.floor(rand() * LAYOUTS.length)];
   const splines = layout(rand, W, H, inks);
-  // Grains grow with the ink laid down, so a layout with many splines shares out at most RIBBON_MAX.
   const total = STEPS * splines.reduce((sum, s) => sum + s.mass, 0);
-  if (total > RIBBON_MAX) for (const s of splines) s.mass *= RIBBON_MAX / total;
+  for (const s of splines) s.mass *= RIBBON_INK / total;
   for (let step = 0; step < STEPS; step++)
     for (const s of splines) {
       const from = s.curve;

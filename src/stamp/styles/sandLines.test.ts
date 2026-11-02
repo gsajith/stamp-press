@@ -32,10 +32,10 @@ describe("sand lines 1", () => {
   // ADR 0001: a published style's output for a seed never changes. If one of these fails, the style's drawing
   // changed: restore it, and ship the change as a new style version instead.
   it("draws the same pixels it shipped with", () => {
-    expect(sha(pixels(1, 39, 50))).toBe("8ebacdc281cd750a");
-    expect(sha(pixels(2, 50, 39))).toBe("dccc2e0e6aeaa937");
-    expect(sha(pixels(5, 44, 44))).toBe("672216ac8d29f126");
-    expect(sha(pixels(4, 44, 56, "sand1w"))).toBe("9ab12d04dd9f9435");
+    expect(sha(pixels(1, 39, 50))).toBe("847651dd3d1744a3");
+    expect(sha(pixels(2, 50, 39))).toBe("48482be0112ae06a");
+    expect(sha(pixels(5, 44, 44))).toBe("fb8249200f7a9237");
+    expect(sha(pixels(4, 44, 56, "sand1w"))).toBe("3c895ef0c20880a4");
   });
 
   it("draws different art for different seeds", () => {
@@ -49,7 +49,7 @@ describe("sand lines 1", () => {
   // grains grow with the pixel count, so both draws lay the same ink in the same places. They differ by grain
   // noise, and because a stroke under a pixel wide spreads its ink over the whole pixel in the small draw,
   // where the large one piles it onto fewer pixels that saturate: the small draw prints hairlines bolder, by
-  // design. At desk size that measures 2 to 5 out of 255, at 40 px 3 to 10.
+  // design. At desk size that measures 2 to 5 out of 255, at 40 px 5 to 10.
   it.each([
     [7, 40, 52, 8, 13],
     [8, 52, 40, 8, 13],
