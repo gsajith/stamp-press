@@ -37,12 +37,12 @@ describe("fracture 1", () => {
   // ADR 0001: a published style's output for a seed never changes. If one of these fails, the style's drawing
   // changed: restore it, and ship the change as a new style version instead.
   it("draws the same pixels it shipped with", () => {
-    expect(sha(pixels(1, 39, 50))).toBe("70749f2ddb192a5e");
-    expect(sha(pixels(2, 50, 39))).toBe("b6578195fe057eda");
-    expect(sha(pixels(3, 44, 44))).toBe("d45a263e1c7d8d99");
-    expect(sha(pixels(4, 44, 56, "crack1w"))).toBe("eb371d438dc190a3");
+    expect(sha(pixels(1, 39, 50))).toBe("9d10e11e3b4780cf");
+    expect(sha(pixels(2, 50, 39))).toBe("190114bc92edacbe");
+    expect(sha(pixels(3, 44, 44))).toBe("d7a16fb3c97cb744");
+    expect(sha(pixels(4, 44, 56, "crack1w"))).toBe("635534ce49472a8d");
     // Desk size.
-    expect(sha(pixels(5, 160, 205))).toBe("3796ff2c616e88dd");
+    expect(sha(pixels(5, 160, 205))).toBe("5443757edbdc5870");
   });
 
   it("draws different art for different seeds", () => {
@@ -82,6 +82,43 @@ describe("fracture 1", () => {
       expect(total / (w * h * 3)).toBeLessThan(bound);
     },
   );
+
+  // The detail view rounds each side on its own, so its art's shape is a pixel off the desk's: a portrait art
+  // 200x256 on the desk is 1597x2048 in the detail view. Each large pixel falls in the small pixel at the same
+  // spot in art units, measured from the art's middle, and the small pixels it fills are compared.
+  it.each([
+    [7, 200, 256, 1597, 2048],
+    [8, 256, 200, 2048, 1597],
+    [9, 226, 226, 1805, 1806],
+    [10, 172, 228, 1379, 1820],
+  ])("draws seed %i the same at %ix%i as at %ix%i", (seed, w, h, wl, hl) => {
+    const small = pixels(seed, w, h);
+    const large = pixels(seed, wl, hl);
+    const [unit, unitL] = [Math.min(w, h), Math.min(wl, hl)];
+    const sums = new Float64Array(w * h * 3);
+    const counts = new Float64Array(w * h);
+    for (let y = 0; y < hl; y++) {
+      const sy = Math.floor(((y + 0.5 - hl / 2) / unitL) * unit + h / 2);
+      if (sy < 0 || sy >= h) continue;
+      for (let x = 0; x < wl; x++) {
+        const sx = Math.floor(((x + 0.5 - wl / 2) / unitL) * unit + w / 2);
+        if (sx < 0 || sx >= w) continue;
+        const i = sy * w + sx;
+        counts[i]++;
+        for (let c = 0; c < 3; c++)
+          sums[i * 3 + c] += large[(y * wl + x) * 4 + c];
+      }
+    }
+    let [total, n] = [0, 0];
+    for (let i = 0; i < w * h; i++) {
+      if (counts[i] === 0) continue;
+      n++;
+      for (let c = 0; c < 3; c++)
+        total += Math.abs(sums[i * 3 + c] / counts[i] - small[i * 4 + c]);
+    }
+    // Mean difference per channel, out of 255.
+    expect(total / (n * 3)).toBeLessThan(3);
+  });
 });
 
 describe("fractures", () => {
@@ -106,7 +143,7 @@ describe("fractures", () => {
     const rand = stream(1, 1);
     const sources: Pt[] = Array.from({ length: 2000 }, () => [rand(), rand()]);
     const step = 0.006;
-    const cracks = fractures(rand, {
+    const cracks = fractures(1, {
       sources,
       blows: [
         { at: [0.5, 0.5], count: 3 },

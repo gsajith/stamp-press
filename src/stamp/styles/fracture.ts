@@ -56,6 +56,8 @@ const DOT2 = DOT * DOT;
 const SPAWN_DIMINISH = 0.9;
 const SPAWN_ANGLE = 2.0;
 const SPAWN_FACTOR = 0.3;
+// Salts a branch's random stream, seeded by its parent's.
+const BRANCH_SALT = 0x5bd1e995;
 
 export type FractureOptions = {
   // The scattered points cracks travel through. A crack dies where none lie ahead of it.
@@ -75,9 +77,11 @@ export type FractureOptions = {
 };
 
 // The crack paths that grow from the blows, each a list of points. A crack that meets another ends on one of
-// the other's points, so cracks never cross.
+// the other's points, so cracks never cross. Each crack draws from its own random stream, and a branch's
+// stream is seeded by its parent's, so a crack that ends a step sooner, such as at the edge of a slightly
+// wider draw, changes only its own branches rather than every crack after it.
 export function fractures(
-  rand: () => number,
+  seed: number,
   {
     sources,
     blows,
@@ -164,7 +168,13 @@ export function fractures(
     return first;
   };
 
-  type Fracture = { path: number[]; dx: number; dy: number; chance: number };
+  type Fracture = {
+    path: number[];
+    dx: number;
+    dy: number;
+    chance: number;
+    rand: () => number;
+  };
   let alive: Fracture[] = [];
   const dead: Fracture[] = [];
   const reach2 = reach * reach;
@@ -254,21 +264,30 @@ export function fractures(
 
   // Starts a crack from point p heading (dx, dy). It takes one step at once, and only a crack that lives
   // through it is kept, as in the original.
-  const start = (p: number, dx: number, dy: number, chance: number) => {
-    const f: Fracture = { path: [p], dx, dy, chance };
+  const start = (
+    p: number,
+    dx: number,
+    dy: number,
+    chance: number,
+    rand: () => number,
+  ) => {
+    const f: Fracture = { path: [p], dx, dy, chance, rand };
     if (advance(f)) alive.push(f);
   };
 
+  let started = 0;
   for (const { at, count } of blows) {
     let p = 0;
     let best = Infinity;
     for (let k = 0; k < sources.length; k++) {
-      const d2 = (X[k] - at[0]) ** 2 + (Y[k] - at[1]) ** 2;
+      const [ex, ey] = [X[k] - at[0], Y[k] - at[1]];
+      const d2 = ex * ex + ey * ey;
       if (d2 < best) [best, p] = [d2, k];
     }
     for (let n = 0; n < count; n++) {
+      const rand = stream(seed, started++);
       const a = 2 * Math.PI * rand();
-      start(p, cos(a), sin(a), 1);
+      start(p, cos(a), sin(a), 1, rand);
     }
   }
 
@@ -281,9 +300,9 @@ export function fractures(
     alive = living;
     // Each living crack may branch from its tip, at right angles to it, give or take.
     for (const f of living) {
-      if (rand() > f.chance * SPAWN_FACTOR) continue;
-      const side = rand() < 0.5 ? -1 : 1;
-      const j = (0.5 - rand()) * SPAWN_ANGLE;
+      if (f.rand() > f.chance * SPAWN_FACTOR) continue;
+      const side = f.rand() < 0.5 ? -1 : 1;
+      const j = (0.5 - f.rand()) * SPAWN_ANGLE;
       const [px, py] = [-f.dy * side, f.dx * side];
       const [c, s] = [cos(j), sin(j)];
       start(
@@ -291,6 +310,7 @@ export function fractures(
         c * px - s * py,
         s * px + c * py,
         f.chance * SPAWN_DIMINISH,
+        stream(Math.floor(f.rand() * 4294967296), BRANCH_SALT),
       );
     }
   }
@@ -300,14 +320,12 @@ export function fractures(
   );
 }
 
-// `count` points scattered uniformly where `inside` holds in the box, none within `gap` of another: the
-// original's darts.
+// `count` points scattered uniformly in the box, none within `gap` of another: the original's darts.
 function darts(
   rand: () => number,
   count: number,
   [bx, by, bw, bh]: [number, number, number, number],
   gap: number,
-  inside: (x: number, y: number) => boolean,
 ): Pt[] {
   const cols = Math.ceil(bw / gap);
   const rows = Math.ceil(bh / gap);
@@ -317,7 +335,6 @@ function darts(
   for (let n = 0; n < count; n++) {
     const x = bx + bw * rand();
     const y = by + bh * rand();
-    if (!inside(x, y)) continue;
     const ci = Math.min(cols - 1, Math.floor((x - bx) / gap));
     const ri = Math.min(rows - 1, Math.floor((y - by) / gap));
     let free = true;
@@ -332,7 +349,7 @@ function darts(
         j++
       )
         for (const [px, py] of cells[i * cols + j])
-          if ((px - x) ** 2 + (py - y) ** 2 < gap2) {
+          if ((px - x) * (px - x) + (py - y) * (py - y) < gap2) {
             free = false;
             break;
           }
@@ -345,6 +362,10 @@ function darts(
 
 // Caps the crack points placed, so the work stays within the draw budget.
 const MAX_POINTS = 11000;
+// Half the side of the box points are scattered over, centered on the art: wider than any art's ground. An
+// art's long side is at most about 1.4 times its short side, and a whole-frame ground reaches up to nine steps
+// past it.
+const SCATTER = 0.78;
 // Draws with a short side under this many pixels are supersampled.
 const SUPERSAMPLE_BELOW = 128;
 
@@ -356,55 +377,72 @@ function draw(
   { paper, inks }: Palette,
 ) {
   const rand = stream(seed, 0);
+  // Cracks grow in art units centered on the art, so a draw a pixel wider or narrower, as the detail view's
+  // rounding makes it, moves only the edges.
   const unit = Math.min(width, height);
-  const [W, H] = [width / unit, height / unit];
+  const [hw, hh] = [width / unit / 2, height / unit / 2];
 
-  // The ground the cracks spread over: a disc as in the original's sample, a rectangle inset as in its
-  // main script, or the whole frame and past it, so cracks run off the edges. The larger the ground, the longer
-  // the step, which keeps the work in budget: cells span about fifteen steps.
+  // The ground the cracks spread over: a disc as in the original's sample, a rectangle inset as in its main
+  // script, or the whole frame and past it, so cracks run off the edges. It spans gx by gy either side of the
+  // middle. The larger the ground, the longer the step, which keeps the work in budget: cells span about
+  // fifteen steps.
   const shape = rand();
   let step: number;
-  let box: [number, number, number, number];
+  let gx: number;
+  let gy: number;
   let inside: (x: number, y: number) => boolean;
-  if (shape < 0.35) {
+  const disc = shape < 0.35;
+  if (disc) {
     step = 0.0046 + 0.0014 * rand();
     const r = 0.42 + 0.04 * rand();
-    const [cx, cy] = [W / 2, H / 2];
-    box = [cx - r, cy - r, 2 * r, 2 * r];
-    inside = (x, y) => (x - cx) ** 2 + (y - cy) ** 2 < r * r;
-  } else if (shape < 0.55) {
-    step = 0.0055 + 0.0017 * rand();
-    const m = 0.07 + 0.03 * rand();
-    box = [m, m, W - 2 * m, H - 2 * m];
-    inside = () => true;
+    [gx, gy] = [r, r];
+    inside = (x, y) => x * x + y * y < r * r;
   } else {
-    step = 0.0066 + 0.0018 * rand();
-    const pad = 4 * step;
-    box = [-pad, -pad, W + 2 * pad, H + 2 * pad];
-    inside = () => true;
+    // The ground's edges snap to a grid eight steps apart, so the slightly different shape of a larger draw
+    // almost never moves them, and no crack near an edge grows differently.
+    if (shape < 0.55) {
+      step = 0.0055 + 0.0017 * rand();
+      const m = 0.07 + 0.03 * rand();
+      const q = 8 * step;
+      [gx, gy] = [q * Math.floor((hw - m) / q), q * Math.floor((hh - m) / q)];
+    } else {
+      step = 0.0066 + 0.0018 * rand();
+      const q = 8 * step;
+      [gx, gy] = [
+        q * Math.ceil((hw + step) / q),
+        q * Math.ceil((hh + step) / q),
+      ];
+    }
+    inside = (x, y) => Math.abs(x) < gx && Math.abs(y) < gy;
   }
-  // Points about 3.8 steps apart on average, at least one step apart, as in the original.
+  // Points about 3.8 steps apart on average, at least one step apart, as in the original. They're scattered
+  // over a box that holds any art's ground, from their own stream, so the same seed scatters the same points
+  // whatever the draw's shape.
   const spacing = 3.8 * step;
   const sources = darts(
-    rand,
-    Math.round((box[2] * box[3]) / (spacing * spacing)),
-    box,
+    stream(seed, 1),
+    Math.round((4 * SCATTER * SCATTER) / (spacing * spacing)),
+    [-SCATTER, -SCATTER, 2 * SCATTER, 2 * SCATTER],
     step,
-    inside,
-  );
+  ).filter(([x, y]) => inside(x, y));
+  // Blows sit within the ground, placed as shares of its half widths.
   const blowCount = 4 + Math.floor(rand() * 4);
+  const blowRand = stream(seed, 2);
   const blows = Array.from({ length: blowCount }, () => {
-    let at: Pt;
-    do at = [box[0] + box[2] * rand(), box[1] + box[3] * rand()];
-    while (!inside(at[0], at[1]));
-    return { at, count: 2 + Math.floor(rand() * 2) };
+    let [u, v] = [2 * blowRand() - 1, 2 * blowRand() - 1];
+    while (disc && u * u + v * v >= 1)
+      [u, v] = [2 * blowRand() - 1, 2 * blowRand() - 1];
+    return {
+      at: [u * gx, v * gy] as Pt,
+      count: 2 + Math.floor(blowRand() * 2),
+    };
   });
   // The original looks 50 steps ahead. Looking 11 steps ahead is cheaper, and the points between count by
   // their expected pull: their density, times the depth of the band, times the cone's width at unit distance.
   const reach = 11 * step;
   const far =
     ((50 * step - reach) * 2 * Math.sqrt(1 - DOT * DOT)) / (spacing * spacing);
-  const cracks = fractures(rand, {
+  const cracks = fractures(subSeed(seed, 3), {
     sources,
     blows,
     step,
@@ -435,12 +473,13 @@ function draw(
   const [ox, oy] = [64 * rand(), 64 * rand()];
   const glaze = 0.4 + 0.2 * rand();
 
-  // The picture's colors at `width` by `height` pixels, three per pixel.
-  const paint = (width: number, height: number) => {
+  // Paints the picture at `width` by `height` pixels into `data`, four bytes per pixel.
+  const paint = (width: number, height: number, data: Uint8ClampedArray) => {
     // Each pixel's squared distance to the nearest crack, in pixels, as far as the halo reaches.
     const n = width * height;
     const unit = Math.min(width, height);
-    const dist2 = new Float64Array(n).fill(Infinity);
+    const [mx, my] = [width / 2, height / 2];
+    const dist2 = new Float32Array(n).fill(Infinity);
     const r = radius * unit;
     // A line thinner than a pixel draws a pixel wide at matching strength, so it keeps its weight when small.
     const line = Math.max(r, 0.5);
@@ -473,10 +512,10 @@ function draw(
     for (const crack of cracks)
       for (let p = 0; p + 1 < crack.length; p++)
         segment(
-          crack[p][0] * unit,
-          crack[p][1] * unit,
-          crack[p + 1][0] * unit,
-          crack[p + 1][1] * unit,
+          crack[p][0] * unit + mx,
+          crack[p][1] * unit + my,
+          crack[p + 1][0] * unit + mx,
+          crack[p + 1][1] * unit + my,
         );
 
     // Each pixel's tint, 0 for none or 1 + the index of its ink.
@@ -527,7 +566,8 @@ function draw(
         // short side squared.
         let tint = 0;
         if (count < (unit * unit) / 25) {
-          const [u, v] = [(sx / count + 0.5) / unit, (sy / count + 0.5) / unit];
+          const u = (sx / count + 0.5 - mx) / unit;
+          const v = (sy / count + 0.5 - my) / unit;
           const k = noise(u * frequency + ox, v * frequency + oy);
           // Scattered cells take the second ink or the third by another field, which changes only where it
           // crosses zero, so a cell keeps its ink at any size.
@@ -556,7 +596,6 @@ function draw(
       }
       for (let i = 0; i < n; i++) if (cell[i] >= 0) tintAt[i] = cells[cell[i]];
     }
-    const colors = new Float64Array(n * 3);
     for (let i = 0; i < n; i++) {
       const d = Math.sqrt(dist2[i]);
       const a = clamp01(line - d + 0.5) * lineWeight;
@@ -567,30 +606,34 @@ function draw(
         let c = ground[k] + (tint[k] - ground[k]) * g;
         c += (ink[k] - c) * h;
         c += (ink[k] - c) * a;
-        colors[i * 3 + k] = c;
+        data[i * 4 + k] = Math.round(c);
       }
+      data[i * 4 + 3] = 255;
     }
-    return colors;
   };
 
   // A small draw's cracks run a few pixels apart, where a pixel's nearest crack undercounts several sharing it
   // and cells shrink to a pixel or two. So S by S samples per pixel, each a pixel of a draw S times larger.
-  const S = unit < SUPERSAMPLE_BELOW ? Math.ceil(SUPERSAMPLE_BELOW / unit) : 1;
-  const colors = paint(width * S, height * S);
   const image = ctx.createImageData(width, height);
   const data = image.data;
-  for (let y = 0; y < height; y++)
-    for (let x = 0; x < width; x++) {
-      const i = y * width + x;
-      for (let k = 0; k < 3; k++) {
-        let sum = 0;
-        for (let sy = 0; sy < S; sy++)
-          for (let sx = 0; sx < S; sx++)
-            sum += colors[((y * S + sy) * width * S + x * S + sx) * 3 + k];
-        data[i * 4 + k] = Math.round(sum / (S * S));
+  if (unit >= SUPERSAMPLE_BELOW) paint(width, height, data);
+  else {
+    const S = Math.ceil(SUPERSAMPLE_BELOW / unit);
+    const samples = new Uint8ClampedArray(width * S * height * S * 4);
+    paint(width * S, height * S, samples);
+    for (let y = 0; y < height; y++)
+      for (let x = 0; x < width; x++) {
+        const i = y * width + x;
+        for (let k = 0; k < 3; k++) {
+          let sum = 0;
+          for (let sy = 0; sy < S; sy++)
+            for (let sx = 0; sx < S; sx++)
+              sum += samples[((y * S + sy) * width * S + x * S + sx) * 4 + k];
+          data[i * 4 + k] = Math.round(sum / (S * S));
+        }
+        data[i * 4 + 3] = 255;
       }
-      data[i * 4 + 3] = 255;
-    }
+  }
   ctx.putImageData(image, 0, 0);
 }
 
