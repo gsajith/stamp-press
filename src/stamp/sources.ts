@@ -13,6 +13,7 @@ import { flowLines1 } from "./styles/flowLines";
 import { girih1 } from "./styles/girih";
 import { guillocheRosette1 } from "./styles/guillocheRosette";
 import { halftoneObject1 } from "./styles/halftoneObject";
+import { hatMonotile1 } from "./styles/hatMonotile";
 import { inkLandscape1 } from "./styles/inkLandscape";
 import { islandSurvey1 } from "./styles/islandSurvey";
 import { isohedralTiling1 } from "./styles/isohedralTiling";
@@ -122,6 +123,7 @@ export const NEW_STYLES: readonly Style[] = [
   fantasyMap1,
   sandLines1,
   reactionDiffusion1,
+  hatMonotile1,
 ];
 
 // Style versions no longer pressed. They stay registered so their share links keep working: when a new
