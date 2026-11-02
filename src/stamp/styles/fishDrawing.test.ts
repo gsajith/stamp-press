@@ -40,7 +40,7 @@ describe("fish drawing 1", () => {
     expect(hashes.size).toBe(5);
   });
 
-  // Every line is drawn with its exact box-filtered coverage, so lines finer than a pixel average out instead
+  // Each pixel is inked by about the share of it a line covers, so lines finer than a pixel average out instead
   // of aliasing. Where lines cross inside one pixel their overlap is estimated, so draws stray a little. Draws
   // with a short side under 128 px are supersampled, since there whole patches of lines share a pixel.
   it.each([

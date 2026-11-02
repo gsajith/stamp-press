@@ -37,9 +37,9 @@ import type { Style } from "../sources";
 // fishdraw's 230.
 //
 // The drawing step lays the fish and caption out in units of the art's short side, then rasterizes every
-// polyline as a round-capped line with its exact box-filtered coverage, so a line keeps its weight at any size
-// and the pixels match in every browser and in Node (ADR 0001). The last fish is cached, so redrawing a stamp
-// only rasterizes.
+// polyline as a round-capped line, each pixel inked by about the share of it the line covers, so a line keeps
+// its weight at any size and the pixels match in every browser and in Node (ADR 0001). The last fish is
+// cached, so redrawing a stamp only rasterizes.
 
 type Pt = [number, number];
 type Line = Pt[];
@@ -2147,8 +2147,9 @@ function putText(text: string): [number, Line[]] {
 
 // ---- Drawing ----
 
-// The fish's pen, in fishdraw's units, where its plotter line is 1. A little heavier than 1, so the fish reads at desk
-// size, where this pen is under a pixel, and still looks drawn with a fine pen in the detail view.
+// The fish's pen, in fishdraw's units, where its plotter line is 1. A little heavier than 1, so the fish
+// reads at desk size, where this pen is under a pixel, and still looks drawn with a fine pen in the detail
+// view.
 const PEN = 2.1;
 // The lettering and keyline's pen, the keyline's inset and the caption's capital height, in units of the art's
 // short side. The pen is about 1 px at desk size, where the short side is about 200 px.
@@ -2179,9 +2180,11 @@ function fishFor(seed: number) {
   return cached;
 }
 
-// Rasterizes polylines, in pixels, `half` a pixel wide either side, into `cover`: each line its box-filtered
-// area, the lines of one polyline joined by their maximum so joints don't darken, and separate polylines
-// combined as overlapping ink. `own` is scratch the size of `cover`, all zero.
+// Rasterizes polylines, in pixels, `half` a pixel wide either side, into `cover`. Each pixel takes the share
+// of it a line covers, measured across the line from the pixel's distance to it: exact for a line along a
+// pixel row or column, close for others and at ends. The lines of one polyline join by their maximum so
+// joints don't darken, and separate polylines combine as overlapping ink. `own` is scratch the size of
+// `cover`, all zero.
 function rasterize(
   cover: Float32Array,
   own: Float32Array,
@@ -2227,7 +2230,7 @@ function rasterize(
           const d2 = ex * ex + ey * ey;
           if (d2 >= reach * reach) continue;
           const d = Math.sqrt(d2);
-          // The share of a one-pixel box centered d from the line's middle that the line covers.
+          // The share of a one-pixel span centered d from the line's middle, across the line, that it covers.
           const c = Math.min(d + 0.5, half) - Math.max(d - 0.5, -half);
           const i = y * width + x;
           if (c > own[i]) {
